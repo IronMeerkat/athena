@@ -1,3 +1,7 @@
 .DS_Store
 **/.venv/**
 *.env
+**/google-services.json
+athena-android/google-services.json
+
+athena-android/app/build/intermediates/desugar_graph/debug/dexBuilderDebug/out/currentProject/dirs_bucket_8/graph.bin
