@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/select_ignored"
+        android:title="Select Ignored Apps" />
+    <item
+        android:id="@+id/add_shortcut_usage_tracker"
+        android:title="Add Shotcut to Homescreen" />
+</menu>

@@ -1,0 +1,161 @@
+<resources>
+    <string name="app_name" translatable="false">دیجی‌پاز</string>
+    <string name="launcher_options">گزینه‌های لانچر</string>
+    <string name="focus_mode">حالت تمرکز</string>
+    <string name="app_blocker">مسدودکننده برنامه</string>
+    <string name="view_reel_blocker">مسدودکننده ویو/ریلز</string>
+    <string name="keyword_blocker">مسدودکننده واژگان کلیدی</string>
+    <string name="anti_uninstall">ضد پاک‌شدن</string>
+    <string name="usage_tracker">ردیاب بهره‌وری</string>
+    <string name="disabled">غیرفعال</string>
+    <string name="select_pinned_apps">انتخاب برنامه‌های سنجاق شده</string>
+    <string name="warning_launcher_settings">برای دسترسی به این گزینه، دیجی‌پاز را به عنوان لانچر پیش‌فرض تنظیم کنید</string>
+    <string name="start_focus_mode">آغاز حالت تمرکز</string>
+    <string name="warning_general_settings">برای دسترسی به این گزینه، اجازه دسترسی‌پذیری عمومی را فعال کنید</string>
+    <string name="select_blocked_apps">انتخاب برنامه‌های مسدود شده</string>
+    <string name="manage_warning_screen">مدیریت صفحه هشدار</string>
+    <string name="manage_cheat_hours">مدیریت ساعت‌های تقلب</string>
+    <string name="warning_app_blocker_settings">برای مدیریت مسدود کردن برنامه، اجازه دسترسی‌پذیری مسدودکننده برنامه را فعال کنید</string>
+    <string name="warning_view_blocker_settings">برای مدیریت مسدود کردن مشاهده، اجازه دسترسی‌پذیری مسدودکننده مشاهده را فعال کنید</string>
+    <string name="add_custom_keywords">افزودن واژگان کلیدی سفارشی</string>
+    <string name="manage_keyword_packs">مدیریت بسته‌های واژگان کلیدی</string>
+    <string name="warning_keywords_settings">برای مدیریت واژگان کلیدی مسدود شده، اجازه دسترسی‌پذیری مسدودکننده واژگان کلیدی را فعال کنید</string>
+    <string name="usage_stats">آمار بهره‌وری</string>
+    <string name="warning_usage_tracker_settings">برای مدیریت ردیاب‌ها، اجازه دسترسی‌پذیری ردیاب بهره‌وری را فعال کنید</string>
+    <string name="remove_anti_uninstall">خاموش کردن ضد پاک‌شدن</string>
+    <string name="add_cheat_hours">افزودن ساعت‌های تقلب</string>
+    <string name="add">افزودن</string>
+    <string name="save">ذخیره</string>
+    <string name="todays_stats">آمار امروز</string>
+    <string name="you_scrolled_2_d_reels">شما %2$d ریل را پیمایش کردید</string>
+    <string name="your_average_attention_span_was_2_d_mins">مدت توجه متوسط شما %2$d دقیقه بود</string>
+    <string name="view_more">مشاهده بیشتر</string>
+    <string name="number_of_reels_scrolled">تعداد ریل‌های پیمایش شده</string>
+    <string name="average_attention_span">مدت توجه متوسط</string>
+    <string name="apps">برنامه‌ها:</string>
+    <string name="remove">حذف</string>
+    <string name="write_down_a_keyword">نوشتن یک واژه کلیدی</string>
+    <string name="select_start_time">انتخاب زمان آغاز</string>
+    <string name="select_end_time">انتخاب زمان پایان</string>
+    <string name="select_apps_to_unblock">انتخاب برنامه‌هایی برای رفع مسدودیت</string>
+    <string name="disable_proceed_button">غیرفعال کردن دکمه ادامه</string>
+    <string name="display_time_elapsed">نمایش زمان سپری شده</string>
+    <string name="display_number_of_reels_scrolled">نمایش تعداد ریل‌های پیمایش شده</string>
+    <string name="specify_duration_of_focus_mode_in_mins">مشخص کردن مدت زمان حالت تمرکز به دقیقه</string>
+    <string name="block_adult_keywords">مسدود کردن واژگان کلیدی بزرگسالان</string>
+    <string name="password">گذروژه</string>
+    <string name="specify_cooldown_interval_in_minutes">مشخص کردن فاصله استراحت به دقیقه</string>
+    <string name="warning_message">پیام هشدار</string>
+    <string name="allow_viewing_instagram_reels_sent_in_instagram_inbox">اجازه مشاهده ریل‌های اینستاگرام ارسال شده در صندوق ورودی اینستاگرام</string>
+    <string name="allow_opening_the_first_reel_in_feed">اجازه باز کردن اولین ریل در فید</string>
+    <string name="in_warning_changeable_cooldown">فاصله استراحت قابل تغییر حین هشدار</string>
+    <string name="timed_mode">حالت زمان‌بندی شده</string>
+    <string name="block_all_uninstall_attempts_for_a_set_amount_of_days">مسدود کردن تمام تلاش‌های پاک‌شدن برای تعداد مشخصی از روزها.</string>
+    <string name="password_mode">حالت گذروژه</string>
+    <string name="block_all_uninstall_attempts_until_you_remove_anti_uninstall_with_a_password">مسدود کردن تمام تلاش‌های پاک‌ کردن برنامه تا زمانی که حفاظت ضد پاک‌شدن با یک گذروژه پاک شود</string>
+    <string name="next">بعدی</string>
+    <string name="password_mode_desc">مطمئن شوید که این گذروژه را فراموش نمیکنید. ممکن است نتوانید بدون آن از ضد پاک‌شدن خارج شوید.</string>
+    <string name="turn_on">فعال کردن</string>
+    <string name="timed_mode_desc">چقدر می‌خواهید ضد پاک‌شدن فعال بماند؟</string>
+    <string name="turn_on_anti_uninstall">فعال کردن ضد پاک‌شدن</string>
+    <string name="minutes">دقیقه</string>
+    <string name="app_icon">نماد برنامه</string>
+
+    <string name="accessibility_permission_app_blocker">
+        فعال کردن این گزینه در دیجی‌پاز موارد زیر را باز می‌کند:\n1. مسدود کردن برنامه\n\n
+        دیجی‌پاز نیاز به دسترسی به داده‌های دسترسی دارد تا بداند چه زمانی یک ویژگی خاص در یک برنامه، مانند فید رسانه‌های اجتماعی یا یک بازی را باز می‌کنید.
+        این به دیجی‌پاز اجازه می‌دهد تا آن ویژگی‌ها را بر اساس ترجیحات شما مسدود کند و به شما کمک کند متمرکز بمانید و حواس‌پرتی‌های صفحه را کاهش دهید.\n\n
+        اطمینان داشته باشید که تمام داده‌های دسترسی به‌طور ایمن روی دستگاه شما باقی می‌ماند—ما هرگز داده‌های شما را به اشتراک نمی‌گذاریم یا منتقل نمی‌کنیم و حریم خصوصی شما همیشه محافظت می‌شود.
+        \n\n
+    </string>
+    <string name="accessibility_permission_view_blocker">
+        فعال کردن این گزینه در دیجی‌پاز موارد زیر را باز می‌کند:\n1. مسدود کردن مشاهده\n2. مسدود کردن ریل‌های اینستاگرام، تیک‌تاک و یوتیوب شورت\n\n
+        دیجی‌پاز نیاز به دسترسی به داده‌های دسترسی دارد تا بداند چه زمانی یک ویژگی خاص در یک برنامه، مانند فید رسانه‌های اجتماعی یا یک بازی را باز می‌کنید.
+        این به دیجی‌پاز اجازه می‌دهد تا آن ویژگی‌ها را بر اساس ترجیحات شما مسدود کند و به شما کمک کند متمرکز بمانید و حواس‌پرتی‌های صفحه را کاهش دهید.\n\n
+        اطمینان داشته باشید که تمام داده‌های دسترسی به‌طور ایمن روی دستگاه شما باقی می‌ماند—ما هرگز داده‌های شما را به اشتراک نمی‌گذاریم یا منتقل نمی‌کنیم و حریم خصوصی شما همیشه محافظت می‌شود.
+        \n\n
+    </string>
+    <string name="accessibility_permission_usage_tracker">
+        این ویژگی نیاز به مجوز نمایش روی سایر برنامه‌ها دارد تا کار کند. لطفاً ابتدا آن را فعال کنید و سپس این گزینه را فعال کنید. در صورت بروز مشکل، دوباره راه‌اندازی کنید.\n\n
+
+        فعال کردن این گزینه در دیجی‌پاز موارد زیر را باز می‌کند:\n1. شمارش تعداد ریل‌های پیمایش شده\n2. محاسبه مدت توجه متوسط در هنگام تماشای آن ریل‌ها\n3. یک پوشش شناور که زمان سپری شده را نشان می‌دهد\n\n
+        دیجی‌پاز نیاز به دسترسی به داده‌های دسترسی دارد تا بداند چه زمانی یک ویژگی خاص در یک برنامه، مانند فید رسانه‌های اجتماعی یا یک بازی را باز می‌کنید.
+        این به دیجی‌پاز اجازه می‌دهد تا آن ویژگی‌ها را بر اساس ترجیحات شما مسدود کند و به شما کمک کند متمرکز بمانید و حواس‌پرتی‌های صفحه را کاهش دهید.\n\n
+        اطمینان داشته باشید که تمام داده‌های دسترسی به‌طور ایمن روی دستگاه شما باقی می‌ماند—ما هرگز داده‌های شما را به اشتراک نمی‌گذاریم یا منتقل نمی‌کنیم و حریم خصوصی شما همیشه محافظت می‌شود.
+        \n\n
+    </string>
+    <string name="accessibility_permission_keyword_blocker">
+        فعال کردن این گزینه در دیجی‌پاز موارد زیر را باز می‌کند:\n1. مسدود کردن واژگان کلیدی سفارشی\n2. مسدود کردن محتوایی مانند مواد بزرگسالان\n\n
+        دیجی‌پاز نیاز به دسترسی به داده‌های دسترسی دارد تا بداند چه زمانی یک ویژگی خاص در یک برنامه، مانند فید رسانه‌های اجتماعی یا یک بازی را باز می‌کنید.
+        این به دیجی‌پاز اجازه می‌دهد تا آن ویژگی‌ها را بر اساس ترجیحات شما مسدود کند و به شما کمک کند متمرکز بمانید و حواس‌پرتی‌های صفحه را کاهش دهید.\n\n
+        اطمینان داشته باشید که تمام داده‌های دسترسی به‌طور ایمن روی دستگاه شما باقی می‌ماند—ما هرگز داده‌های شما را به اشتراک نمی‌گذاریم یا منتقل نمی‌کنیم و حریم خصوصی شما همیشه محافظت می‌شود.
+        \n\n
+    </string>
+
+    <string name="accessibility_permission_general_features">
+        فعال کردن این گزینه در دیجی‌پاز موارد زیر را باز می‌کند:\n1. حالت تمرکز: مسدود کردن حواس‌پرتی تا یک مدت زمان مشخص.\n2. ضد پاک‌شدن (تنظیمات لازم برای اجرا)\n\n
+        دیجی‌پاز نیاز به دسترسی به داده‌های دسترسی دارد تا بداند چه زمانی یک ویژگی خاص در یک برنامه، مانند فید رسانه‌های اجتماعی یا یک بازی را باز می‌کنید.
+        این به دیجی‌پاز اجازه می‌دهد تا آن ویژگی‌ها را بر اساس ترجیحات شما مسدود کند و به شما کمک کند متمرکز بمانید و حواس‌پرتی‌های صفحه را کاهش دهید.\n\n
+        اطمینان داشته باشید که تمام داده‌های دسترسی به‌طور ایمن روی دستگاه شما باقی می‌ماند—ما هرگز داده‌های شما را به اشتراک نمی‌گذاریم یا منتقل نمی‌کنیم و حریم خصوصی شما همیشه محافظت می‌شود.
+        \n\n
+    </string>
+    <string name="admin_permission_desc">ضد پاک‌شدن دیجی‌پاز</string>
+    <string name="title">عنوان</string>
+    <string name="close">بستن</string>
+    <string name="proceed">ادامه</string>
+    <string name="please_enable_device_admin">لطفاً مجوز مدیریت دستگاه را برای دسترسی به این ویژگی بدهید</string>
+    <string name="setup_complete">تنظیمات کامل شد</string>
+    <string name="enter_setup">وارد تنظیمات شوید</string>
+    <string name="enabled">فعال</string>
+    <string name="start">آغاز</string>
+    <string name="cancel">لغو</string>
+    <string name="manage_keyword_blockers">مدیریت مسدودکننده‌های واژگان کلیدی</string>
+    <string name="ok">باشه</string>
+    <string name="anti_uninstall_removed">ضد پاک‌شدن پاک شد</string>
+    <string name="failed">ناموفق</string>
+    <string name="incorrect_password_please_try_again">"گذروژه نادرست است. لطفاً دوباره تلاش کنید."</string>
+    <string name="retry">تلاش مجدد</string>
+    <string name="start_time">زمان آغاز: %1$d:%2$d</string>
+    <string name="end_time_must_be_after_start_time_has_passed">زمان پایان باید بعد از زمان آغاز گذشته باشد!</string>
+    <string name="end_time">زمان پایان: %02d:%02d</string>
+    <string name="start_time_02d_02d">زمان آغاز: %02d:%02d</string>
+    <string name="specify_cheat_hours">مشخص کردن ساعت‌های تقلب</string>
+    <string name="remaining_time_anti_uninstall">شما هنوز %1$d روز تا باز کردن ضد پاک‌شدن دارید</string>
+    <string name="add_a_new_keyword">افزودن یک واژه کلیدی جدید</string>
+    <string name="you_scrolled_reels">شما %1$d ریل را پیمایش کردید</string>
+    <string name="you_had_an_attention_span_of_seconds_video">شما مدت توجهی برابر با %1$.2f ثانیه/ویدیو داشتید</string>
+    <string name="failed_to_launch_system_digital_wellbeing">عدم موفقیت در راه‌اندازی بهزیستی دیجیتال سیستم</string>
+    <string name="reel_count">تعداد ریل‌ها</string>
+    <string name="short_videos_scrolled">ویدیوهای کوتاه پیمایش شده</string>
+    <string name="seconds_video">ثانیه/ویدیو</string>
+    <string name="app_s_selected">%1$d برنامه(ها) انتخاب شده</string>
+    <string name="please_specify_start_time_first">لطفاً ابتدا زمان آغاز را مشخص کنید</string>
+    <string name="please_type_a_title">لطفاً یک عنوان وارد کنید</string>
+    <string name="please_select_a_start_time">لطفاً یک زمان آغاز انتخاب کنید</string>
+    <string name="please_select_an_end_time">لطفاً یک زمان پایان انتخاب کنید</string>
+    <string name="cheat_timings">%1$d:%2$d تا %3$d:%4$d</string>
+    <string name="configure_warning_screen">صفحه هشدار</string>
+    <string name="proceed_in">لطفاً %1$d ثانیه قبل از فشار دادن ادامه صبر کنید</string>
+    <string name="to">به</string>
+    <string name="please_specify_time">لطفاً زمان را مشخص کنید</string>
+    <string name="from">از</string>
+    <string name="end">پایان</string>
+    <string name="accept">پذیرفتن</string>
+    <string name="accessibility_perm_desc">دیجی‌پاز از مجوز دسترسی برای ارائه ویژگی‌هایی مانند نظارت بر برنامه و ردیابی بهره‌وری برای بهبود تجربه شما استفاده می‌کند. این مجوز به دیجی‌پاز اجازه می‌دهد تا فعالیت‌های برنامه را شناسایی کند و به مدیریت بهره‌وری از دستگاه به‌طور مؤثر کمک کند. اطمینان داشته باشید که تمام داده‌ها به‌طور محلی روی دستگاه شما پردازش می‌شوند و هرگز به هیچ سرور یا شخص ثالثی ارسال نمی‌شوند. حریم خصوصی و امنیت داده‌های شما اولویت‌های اصلی ما هستند.</string>
+    <string name="reject">رد کردن</string>
+    <string name="peel_the_onions">پیازها را پوست بکنید</string>
+    <string name="fix_your_life">زندگی خود را درست کنید</string>
+    <string name="perform_actions_like_a_back_press">انجام اقداماتی مانند فشار دادن دکمه بازگشت</string>
+    <string name="read_content_on_screen">خواندن محتوا روی صفحه</string>
+    <string name="this_will_allow_digipaws_to">این به دیجی‌پاز اجازه می‌دهد تا:</string>
+    <string name="enable_2">"فعال کردن %1$s"</string>
+    <string name="device_admin_perm">دیجی‌پاز از مجوز مدیریت دستگاه برای افزایش امنیت و مسدود کردن پاک‌شدن دیجی‌پاز تا یک دوره مشخص استفاده می‌کند. تمام داده‌ها به‌طور ایمن روی دستگاه شما ذخیره می‌شوند و هرگز به‌صورت خارجی به اشتراک گذاشته نمی‌شوند.</string>
+    <string name="prevent_uninstallation_attempts_until_a_set_condition_is_met">جلوگیری از تلاش‌های پاک‌شدن تا زمانی که یک شرط مشخص برآورده شود</string>
+
+    <string name="device_perm_draw_over_other_apps">دیجی‌پاز از مجوز "نمایش روی سایر برنامه‌ها" برای نمایش یک پوشش شناور کوچک روی صفحه استفاده می‌کند. این پوشش تعداد ریل‌های مشاهده شده و زمان صرف شده را پیگیری می‌کند و به کاربران کمک می‌کند تا در زمان واقعی از استفاده خود آگاه‌تر شوند.</string>
+    <string name="show_time_elapsed_on_phone">نمایش زمان سپری شده روی تلفن</string>
+    <string name="calculate_how_many_reels_tiktok_short_videos_you_scroll_per_day">محاسبه تعداد ریل‌ها/تیک‌تاک/ویدیوهای کوتاه که در روز پیمایش می‌کنید</string>
+    <string name="plan_a_robbery">برنامه‌ریزی یک سرقت</string>
+    <string name="please_provide_display_over_other_apps_permission_to_access_this_feature">لطفاً مجوز نمایش روی سایر برنامه‌ها را برای دسترسی به این ویژگی فراهم کنید</string>
+    <string name="find_digipaws_and_press_enable">دیجی‌پاز را پیدا کنید و روی فعال‌سازی فشار دهید</string>
+</resources>

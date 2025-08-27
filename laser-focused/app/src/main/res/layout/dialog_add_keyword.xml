@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/w_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/keyword_input"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:hint="@string/write_down_a_keyword"
+            android:inputType="text|textNoSuggestions" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

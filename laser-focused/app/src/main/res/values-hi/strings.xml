@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_blocker">ऐप प्रतिबंधक</string>
+    <string name="launcher_options">लॉन्चर विकल्प</string>
+    <string name="focus_mode">ध्यान मोड</string>
+    <string name="keyword_blocker">शब्द प्रतिबंधक</string>
+    <string name="anti_uninstall">अन्‍इंस्‍टॉल प्रतिबंधक</string>
+    <string name="usage_tracker">उपयोग निगरानी</string>
+    <string name="view_reel_blocker">व्यू/रील प्रतिबंधक</string>
+</resources>

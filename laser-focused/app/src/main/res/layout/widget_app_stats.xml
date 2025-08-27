@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_bg_app_stats"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:theme="@style/Theme.Material3.DynamicColors.DayNight">
+
+    <LinearLayout
+        android:id="@android:id/background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_background"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:weightSum="7">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Screen time"
+                style="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?android:attr/textColorPrimary" />
+
+            <ImageView
+                android:id="@+id/refresh_stats_screentime"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:contentDescription="Refresh stats"
+                android:src="@drawable/baseline_refresh_24"
+                android:tint="?android:attr/colorAccent" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/screentime_widget"
+            style="@style/TextAppearance.Material3.HeadlineLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:layout_weight="3"
+            android:gravity="center_vertical"
+            android:singleLine="true"
+            android:text="0h 0m"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/app_1_sm"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="4dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:singleLine="true"
+            android:text="1h App"
+            android:textColor="?android:attr/textColorPrimary" />
+
+
+        <TextView
+            android:id="@+id/app_2_sm"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="4dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:singleLine="true"
+            android:text="1h App"
+            android:textColor="?android:attr/textColorPrimary" />
+
+
+        <TextView
+            android:id="@+id/app_3_sm"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="4dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:singleLine="true"
+            android:text="1h App"
+            android:textColor="?android:attr/textColorPrimary" />
+
+    </LinearLayout>
+</FrameLayout>

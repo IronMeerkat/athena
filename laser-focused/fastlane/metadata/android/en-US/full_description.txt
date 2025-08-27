@@ -1,0 +1,29 @@
+Tired of losing hours to endless scrolling and Screen Time? Meet DigiPaws – the ultimate app to cure screen addiction!
+
+
+<b>Features</b>
+
+- <b>Versatile Blockers</b>: Everything Packed in a single app
+- <b>App Blocker</b> : Block apps, set cheat hours, and more
+- <b>Keyword Blocker</b> : Block custom keywords, Porn blocker , and setup custom link redirection
+- <b>In App blocker</b> : Block youtube shorts or instagram reels while allowing access to other app features
+
+- <b>Grayscale Filter</b> : Turn specific apps black and white to make them boring
+
+- <b>Reels Tracker</b> : Track the number of Intagram reels or tiktoks you scroll
+- <b>App Usage Tracker</b> : Track how you are spending your time on phone
+- <b>Homescreen Widgets</b> : Display statistics on your homescreen
+
+- <b>Anti-Uninstall</b>: Put password or block uninstallation for a few days
+
+- <b>Focus Mode</b> : Block all apps except the whitelisted ones or vice versa
+- <b>Auto Focus</b> : Automatically block selected apps at specified hours of the day
+
+- <b>Extremely Customisable</b> : Setup custom warning messages, cooldowns, and more
+- <b>Privacy Oriented</b> : Everything stays secure on your local device without the need of INTERNET permission
+<b>Usage</b>
+
+1. Launch DigiPaws on your Android device.
+2. Provide all necessary permissions like Accessibility service, Notification, Draw over other apps etc
+3. On Android 13+ devices, you need to additionally allow restricted settings before enabling the accessibility permission. Watch a tutorial here -> https://youtu.be/91B72lEpcqc?si=PCKKUSwM1aLdELqJ
+4. It is highly recommended to download the app directly from f-droid rather than a .apk from github or f-droid website

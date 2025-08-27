@@ -1,0 +1,42 @@
+[versions]
+agp = "8.7.2"
+anychartAndroid = "1.1.5"
+api = "13.1.5"
+gson = "2.11.0"
+kotlin = "1.9.24"
+coreKtx = "1.13.1"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+appcompat = "1.7.0"
+material = "1.12.0"
+activity = "1.9.2"
+constraintlayout = "2.1.4"
+mpandroidchart = "v3.1.0"
+timerangepicker = "1.0.0"
+openai = "3.8.2"
+ktor = "2.3.11"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+anychart-android = { module = "com.github.AnyChart:AnyChart-Android", version.ref = "anychartAndroid" }
+api = { module = "dev.rikka.shizuku:api", version.ref = "api" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
+provider = { module = "dev.rikka.shizuku:provider", version.ref = "api" }
+timerangepicker = { module = "nl.joery.timerangepicker:timerangepicker", version.ref = "timerangepicker" }
+openai-client = { module = "com.aallam.openai:openai-client", version.ref = "openai" }
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/warning_msg"
+        style="@style/TextAppearance.Material3.TitleLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="8dp"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        tools:text="TextView" />
+
+    <nethical.digipaws.views.HorizontalNumberPicker
+        android:id="@+id/mins_picker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:visibility="gone">
+
+    </nethical.digipaws.views.HorizontalNumberPicker>
+
+    <TextView
+        android:id="@+id/proceed_seconds"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"
+        android:text="@string/proceed_in" />
+
+    <Button
+        android:id="@+id/btn_proceed"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp"
+        android:enabled="false"
+        android:text="@string/proceed" />
+
+    <Button
+        android:id="@+id/btn_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="16dp"
+        android:text="@string/cancel"
+        android:textAllCaps="true" />
+
+</LinearLayout>

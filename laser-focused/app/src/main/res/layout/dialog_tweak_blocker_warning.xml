@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:padding="8dp"
+            android:text="@string/configure_warning_screen"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/info"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="How long to unlock for after proceeding?" />
+
+        <nethical.digipaws.views.HorizontalNumberPicker
+        android:id="@+id/select_mins"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+    <CheckBox
+        android:id="@+id/cb_reel_inbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:enabled="true"
+        android:text="@string/allow_viewing_instagram_reels_sent_in_instagram_inbox"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+        <CheckBox
+        android:id="@+id/cb_dynamic_warning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/in_warning_changeable_cooldown" />
+
+        <CheckBox
+            android:id="@+id/cb_proceed_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/disable_proceed_button" />
+
+        <CheckBox
+            android:id="@+id/cb_back_without_warning"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:enabled="true"
+            android:text="Press back directly without showing a warning screen" />
+
+        <LinearLayout
+            android:id="@+id/proceed_delay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/info2"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:padding="8dp"
+                android:text="How long to wait before being able to press the proceed button. Prevents from instantly pressing the button without reading the message." />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/proceed_delay_chips"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                app:checkedChip="@id/fifteen_sec_chip"
+                app:singleLine="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/three_sec_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="3 sec" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/nine_sec_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="9 sec" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/fifteen_sec_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="15 sec" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/thirty_sec_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="30 sec" />
+
+            </com.google.android.material.chip.ChipGroup>
+        </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="@string/warning_message">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/warning_msg_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>
+</ScrollView>
