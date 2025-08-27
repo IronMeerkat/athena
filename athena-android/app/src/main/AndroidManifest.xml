@@ -2,200 +2,44 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission
-        android:name="android.permission.PACKAGE_USAGE_STATS"
-        tools:ignore="ProtectedPermissions" />
-<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"/>
+
     <application
-        android:name=".Digipaws"
         android:allowBackup="true"
-        android:hardwareAccelerated="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.DigiPaws"
-        tools:targetApi="34">
+        android:label="Athena"
+        android:supportsRtl="true">
+
         <activity
-            android:name=".ui.activity.AppealActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Digipaws.TransparentDialog" />
-        <activity
-            android:name=".ui.activity.ShortcutActivity"
-            android:excludeFromRecents="true"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.Digipaws.TransparentDialog"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activity.WarningActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.Digipaws.TransparentDialog" />
-        <activity
-            android:name=".ui.activity.FragmentActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activity.UsageMetricsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activity.TimedActionActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activity.ManageKeywordsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activity.SelectAppsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activity.MainActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="athena" android:host="open" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.activity.LauncherActivity"
-            android:exported="true"
-            android:launchMode="singleTask" />
+
+        <!-- Placeholder to show service registration guidance in digipaws-core manifest -->
 
         <service
-            android:name=".services.ViewBlockerService"
-            android:exported="true"
-            android:label="View Blocker"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/view_blocker_service_config" />
-        </service>
-        <service
-            android:name=".services.KeywordBlockerService"
-            android:exported="true"
-            android:label="Keyword Blocker"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/keyword_blocker_service_config" />
-        </service>
-        <service
-            android:name=".services.AppBlockerService"
-            android:exported="true"
-            android:label="App Blocker"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/app_blocker_service_config" />
-        </service>
-        <service
-            android:name=".services.UsageTrackingService"
-            android:exported="true"
-            android:label="Usage Tracker"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/usage_tracker_service_config" />
-        </service>
-        <service
-            android:name=".services.GeneralFeaturesService"
-            android:exported="true"
-            android:label="General Features"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/general_features_service_config" />
-        </service>
-
-        <receiver
-            android:name=".receivers.AdminReceiver"
-            android:description="@string/admin_permission_desc"
-            android:exported="false"
-            android:permission="android.permission.BIND_DEVICE_ADMIN">
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/device_admin_receiver_info" />
-        </receiver>
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.provider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:enabled="true"
-            android:exported="true"
-            android:multiprocess="false"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-
-        <meta-data android:name="android.app.shortcuts"
-            android:resource="@xml/shortcuts" />
-
-        <receiver android:name=".ui.widgets.ReelsWidgetProvider"
-            android:label="Reel Stats"
+            android:name=".push.AthenaMessagingService"
             android:exported="false">
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="nethical.digipaws.reels.WIDGET_REFRESH" />
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_reels_metadata" />
-        </receiver>
-
-
-        <receiver android:name=".ui.widgets.ScreentimeWidgetProvider"
-            android:label="ScreenTime Stats"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="nethical.digipaws.screentime.WIDGET_REFRESH" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_screentime_metadata" />
-        </receiver>
+        </service>
 
     </application>
 
 </manifest>
+
+

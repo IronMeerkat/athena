@@ -1,106 +1,56 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+  id("com.android.application")
+  alias(libs.plugins.kotlin.android)
+  alias(libs.plugins.compose.compiler)
+  id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "nethical.digipaws"
-    compileSdk = 34
-    flavorDimensions += "version"
+  namespace = "com.ironmeerkat.athena"
+  compileSdk = 35
 
-    defaultConfig {
-        applicationId = "nethical.digipaws"
-        minSdk = 26
-        targetSdk = 34
-        versionCode = 23
-        versionName = "2.3-alpha"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  defaultConfig {
+    applicationId = "com.ironmeerkat.athena"
+    minSdk = 26
+    targetSdk = 35
+    versionCode = 1
+    versionName = "0.1.0"
+  }
+
+  buildTypes {
+    release {
+      isMinifyEnabled = false
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro"
+      )
     }
+  }
 
-    productFlavors {
-        create("lite") {
-            dimension = "version"
-            versionNameSuffix = "-lite"
-            buildConfigField("Boolean", "FDROID_VARIANT", "true")
-        }
+  buildFeatures { compose = true }
+  composeOptions { }
 
-        create("play-store") {
-            dimension = "version"
-            versionNameSuffix = "-full"
-            buildConfigField("Boolean", "FDROID_VARIANT", "false")
-        }
-    }
-
-
-    splits {
-        abi {
-            isEnable = false
-
-        }
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-
-            // required because of hardcoded f-droid values
-            applicationVariants.all {
-                val variant = this
-                if (variant.flavorName == "lite") {
-                    variant.outputs
-                        .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
-                        .forEach { output ->
-                            val outputFileName = "app-lite-universal-release-unsigned.apk"
-                            println("OutputFileName: $outputFileName")
-                            output.outputFileName = outputFileName
-                        }
-                }
-            }
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-    buildFeatures {
-        viewBinding = true
-        buildConfig = true
-    }
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+  }
+  kotlinOptions { jvmTarget = "17" }
 }
 
-
-
 dependencies {
+  implementation(project(":digipaws-core"))
+  implementation(project(":athena-sdk"))
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
+  implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.compose.runtime)
+  implementation(libs.androidx.compose.ui.tooling.preview)
+  implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.navigation.compose)
+  implementation(libs.androidx.core.ktx)
 
-    // Shizuku dependecies
-    implementation (libs.api)
-    implementation (libs.provider)
-
-    implementation(libs.gson)
-
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-
-    implementation(libs.mpandroidchart)
-    implementation(libs.timerangepicker)
-
-    // OpenAI client and Ktor engine
-    implementation(platform(libs.ktor.bom))
-    implementation(libs.openai.client)
-    implementation(libs.ktor.client.okhttp)
-
+  implementation(libs.kotlinx.coroutines.android)
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.analytics)
+  implementation(libs.firebase.messaging)
 }

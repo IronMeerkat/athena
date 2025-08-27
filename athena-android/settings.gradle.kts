@@ -1,27 +1,22 @@
+@file:Suppress("UnstableApiUsage")
 pluginManagement {
-    repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
-        mavenCentral()
-        gradlePluginPortal()
-    }
+  plugins {
+    id("com.google.gms.google-services") version "4.4.3"
+  }
+  repositories {
+    gradlePluginPortal()
+    google()
+    mavenCentral()
+  }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-        maven {
-            setUrl("https://jitpack.io")
-        }
-    }
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    google()
+    mavenCentral()
+  }
 }
+rootProject.name = "athena-android"
+include(":app", ":digipaws-core", ":athena-sdk")
 
-rootProject.name = "DigiPaws"
-include(":app")
- 
+

@@ -1,9 +1,0 @@
-<paths>
-    <cache-path
-        name="cache_files"
-        path="." />
-
-    <files-path
-        name="logs"
-        path="." />
-</paths>
