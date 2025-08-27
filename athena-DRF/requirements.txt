@@ -1,0 +1,17 @@
+# Requirements for the Athena DRF gateway.  These dependencies form the
+# foundation of a Django REST Framework project with real‑time
+# capabilities via Django Channels and background task support via Celery.
+
+Django==5.2.5
+djangorestframework>=3.14
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.0
+channels>=4.0
+channels-redis>=4.0
+celery>=5.3
+kombu>=5.3
+redis>=5.0
+psycopg2-binary>=2.9.0
+python-dotenv>=1.0
+# Add your own dependencies (authentication backends, third party
+# integrations) here as the project evolves.

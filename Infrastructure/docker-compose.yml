@@ -1,0 +1,140 @@
+version: '3.9'
+
+# This docker-compose file defines the infrastructure for Athena's backend.
+# It provisions a RabbitMQ broker for Celery messaging and Redis for Django
+# Channels (WebSocket support), along with two distinct langchain workers
+# (public and sensitive) in addition to the DRF gateway. These services are
+# intentionally minimal to serve as a boilerplate; you should extend or modify
+# them as your project grows.
+
+services:
+  # RabbitMQ is used by Celery as the message broker for background tasks.
+  # In a production setup you may want to deploy a dedicated RabbitMQ instance
+  # or use a managed service.
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # Redis is used by Django Channels for WebSocket support and real-time
+  # communication. This allows WebSocket consumers to communicate across
+  # multiple worker processes.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # The Django REST Framework application acts as the primary entrypoint for
+  # all inbound requests.  It is responsible for authentication, role based
+  # access control, streaming events via SSE/websockets and proxying long
+  # running tasks into Celery.  In this boilerplate we simply call
+  # `python manage.py runserver` which should be replaced with a more
+  # production‑ready WSGI/ASGI server later on.
+  athena-drf:
+    build: ../athena-DRF
+    command: ["bash", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+    volumes:
+      - ../athena-DRF:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+      - athena-drf-worker
+    environment:
+      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=rpc://
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://athena:athena@postgres:5432/athena
+
+  # The public langchain worker processes tasks for users with minimal
+  # privileges.  It subscribes to the "public" Celery queue and loads only
+  # the non‑sensitive agents, tools and memory namespaces.  Because this
+  # image is built from the same directory as the sensitive worker the
+  # separation of concerns is enforced by environment variables and runtime
+  # configuration rather than by different code bases.  You should avoid
+  # mounting secrets or config into this service which are intended for
+  # sensitive workloads.
+  athena-langchain-public:
+    build: ../athena-langchain
+    command: ["bash", "-c", "celery -A athena_langchain.celery worker -Q public -n public_worker@%h --concurrency=1"]
+    volumes:
+      - ../athena-langchain:/app
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+    environment:
+      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=rpc://
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://athena:athena@postgres:5432/athena
+
+  # The sensitive langchain worker processes tasks that require elevated
+  # privileges.  It subscribes to the "sensitive" Celery queue.  You should
+  # supply sensitive environment variables (API keys, DSNs, etc.) via
+  # separate .env files or secret managers when running this container in
+  # production.  In this boilerplate there is no additional configuration
+  # beyond specifying the queue.
+  athena-langchain-sensitive:
+    build: ../athena-langchain
+    command: ["bash", "-c", "celery -A athena_langchain.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1"]
+    volumes:
+      - ../athena-langchain:/app
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+    environment:
+      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=rpc://
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://athena:athena@postgres:5432/athena
+
+  # PostgreSQL is used for long-term memory storage (user data, historical
+  # records, persistent knowledge). This provides durable storage for
+  # important data that needs to persist across sessions and deployments.
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: athena
+      POSTGRES_USER: athena
+      POSTGRES_PASSWORD: athena
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U athena -d athena"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Celery worker for DRF (for gateway queue and any local async tasks)
+  athena-drf-worker:
+    build: ../athena-DRF
+    command: ["bash", "-c", "celery -A athena_drf.celery worker -Q gateway -n gateway_worker@%h --concurrency=1"]
+    volumes:
+      - ../athena-DRF:/app
+    depends_on:
+      - rabbitmq
+    environment:
+      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=rpc://
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+  postgres_data:
