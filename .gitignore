@@ -22,3 +22,6 @@
 **/dist/
 chatgpt-android
 chatgpt-android
+athena-DRF/athena_drf/athena-5b322-firebase-adminsdk-fbsvc-423b63aba6.json
+*.pyc
+*.egg-info/

@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ironmeerkat.athena.di.ServiceLocator
+import com.ironmeerkat.athena.chat.ui.ChatUiProvider
+import com.ironmeerkat.athena.chat.ui.compose.ComposeChatUiProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,15 +62,9 @@ fun HomeScreen(
 
 @Composable
 fun ChatScreen(onBack: () -> Unit) {
-  Column(
-    modifier = Modifier.fillMaxSize(),
-    verticalArrangement = Arrangement.Center,
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    Text("Chat (placeholder)")
-    Spacer(Modifier.height(12.dp))
-    OutlinedButton(onClick = onBack) { Text("Back") }
-  }
+  // Obtain the active chat UI provider; using Compose provider by default.
+  val provider: ChatUiProvider = ComposeChatUiProvider()
+  provider.ChatScreen(onBack = onBack)
 }
 
 @Composable

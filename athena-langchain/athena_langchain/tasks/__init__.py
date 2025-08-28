@@ -10,3 +10,4 @@ services alongside it.
 
 # Expose run_graph at package level for convenience
 from .run_graph import run_graph  # noqa: F401
+from . import agents  # noqa: F401  # ensure agent list tasks are registered

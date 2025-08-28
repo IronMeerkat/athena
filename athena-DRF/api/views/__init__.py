@@ -11,9 +11,35 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 from rest_framework.views import APIView
+from rest_framework.authentication import BaseAuthentication
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from celery import current_app as celery_app
+from firebase_admin import auth as fb_auth
+
+class FirebaseAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        header = request.META.get("HTTP_AUTHORIZATION", "")
+        if not header.startswith("Bearer "):
+            return None
+        token = header.split(" ", 1)[1].strip()
+        if not token or fb_auth is None:
+            return None
+        try:
+            decoded = fb_auth.verify_id_token(token, check_revoked=True)
+        except Exception:
+            return None
+        uid = decoded.get("uid")
+        if not uid:
+            return None
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        user, _ = User.objects.get_or_create(
+            username=uid,
+            defaults={"email": decoded.get("email", "")},
+        )
+        return (user, None)
+
 from kombu import Connection, Exchange, Queue
 import time
 

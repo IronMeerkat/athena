@@ -20,10 +20,11 @@ from dotenv import load_dotenv
 # Load variables from .env file if present.  This allows you to provide
 # secret keys, database URLs and other configuration without modifying
 # this file directly.  See ``.env.example`` for guidance.
-load_dotenv()
+
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR.parent / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/stable/howto/deployment/checklist/
@@ -160,6 +161,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        'api.views.FirebaseAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         # "rest_framework.authentication.SessionAuthentication",
         # "rest_framework.authentication.BasicAuthentication",
@@ -192,10 +194,3 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
-
-# Placeholder Firebase configuration.  Populate these values in your
-# environment or .env file when integrating Firebase Cloud Messaging.  This
-# structure allows the application code to reference
-# settings.FIREBASE_SERVER_KEY and settings.FIREBASE_SENDER_ID.
-FIREBASE_SERVER_KEY: Optional[str] = os.getenv("FIREBASE_SERVER_KEY")
-FIREBASE_SENDER_ID: Optional[str] = os.getenv("FIREBASE_SENDER_ID")

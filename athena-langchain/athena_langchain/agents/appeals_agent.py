@@ -1,15 +1,16 @@
 from __future__ import annotations
-
 import json
 from typing import TypedDict
-
 from langgraph.graph import END, StateGraph
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 
 from athena_langchain.config import Settings
 from athena_langchain.agents.registry import REGISTRY, AgentConfig, AgentEntry
-from athena_langchain.policies.schedule import get_current_strictness, get_current_goal
+from athena_langchain.tools.policies.schedule import (
+    get_current_strictness,
+    get_current_goal,
+)
 
 
 class AppealState(TypedDict, total=False):
@@ -35,11 +36,13 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         (
             "system",
             (
-                "You are Athena, acting as a fair but firm productivity coach. "
-                "You are evaluating a user's appeal to allow temporary access. "
-                "Consider strictness (1..10) and the current timeblock goal. "
-                "Be lenient at low strictness and strict at high strictness, but always explain. "
-                "Return ONLY JSON with: {\"assistant\":string,\"allow\":boolean,\"minutes\":number}. "
+                "You are Athena, acting as a fair but firm productivity "
+                "coach. You are evaluating a user's appeal to allow "
+                "temporary access. Consider strictness (1..10) and the "
+                "current timeblock goal. Be lenient at low strictness and "
+                "strict at high strictness, but always explain. Return ONLY "
+                "JSON with: {\"assistant\":string,\"allow\":boolean,"
+                "\"minutes\":number}. "
                 "If allowing, minutes should be minimal (1-60)."
             ),
         ),
@@ -47,7 +50,8 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
             "system",
             (
                 "Context: strictness={strictness} | goal={goal} | "
-                "host={host} path={path} title={title} package={package} activity={activity}"
+                "host={host} path={path} title={title} "
+                "package={package} activity={activity}"
             ),
         ),
         (
@@ -60,7 +64,9 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
     ])
 
     def evaluate(state: AppealState) -> AppealState:
-        strict = get_current_strictness(settings, session_id=state.get("session_id"))
+        strict = get_current_strictness(
+            settings, session_id=state.get("session_id")
+        )
         goal = get_current_goal(settings, session_id=state.get("session_id"))
         chain = prompt | llm
         out = chain.invoke({
@@ -102,9 +108,10 @@ REGISTRY.register(
         config=AgentConfig(
             name="Appeals Agent",
             description=(
-                "Evaluate user appeals using strictness and current goal; returns allow + minutes."
+                "Evaluate user appeals using strictness and current goal; "
+                "returns allow + minutes."
             ),
-            model_name=None,
+            model_name='gpt-5',
         ),
         build_graph=build_graph,
     ),

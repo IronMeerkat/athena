@@ -9,7 +9,10 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 
 from athena_langchain.config import Settings
-from athena_langchain.policies.schedule import get_current_strictness, get_current_goal
+from athena_langchain.tools.policies.schedule import (
+    get_current_strictness,
+    get_current_goal,
+)
 from athena_langchain.agents.registry import REGISTRY, AgentConfig, AgentEntry
 
 
@@ -48,19 +51,29 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         (
             "system",
             (
-                "You are a focused productivity classifier. Given a page host/path/title "
-                "or an Android package/activity, choose exactly one classification "
-                "from: work | neutral | distraction | unhealthy_habit. "
-                "Use strictness (1..10) as bias towards blocking (10=strict). "
-                "Return ONLY JSON: {\"classification\": \"work|neutral|distraction|unhealthy_habit\"}."
+                "You are a focused productivity classifier. "
+                "Given a page host/path/title or an Android package/activity, "
+                "choose exactly one classification from this set:\n"
+                "- work\n- neutral\n- distraction\n- unhealthy_habit\n\n"
+                "Use the provided strictness (1..10) as your bias towards "
+                "blocking: 10=extremely strict, 1=very lenient.\n"
+                "Also consider the current timeblock goal. If the page/app "
+                "does not align with the goal, prefer 'distraction' "
+                "at high strictness.\n"
+                "Return ONLY valid JSON shaped as:"
+                " {\"classification\": "
+                "\"work|neutral|distraction|unhealthy_habit\"}."
             ),
         ),
         (
             "human",
             (
                 "strictness={strictness}\n"
-                "goal={goal}\n"
-                "host={host}\npath={path}\npackage={package}\nactivity={activity}\ntitle={title}"
+                "timeblock_goal={timeblock_goal}\n"
+                "host={host}\n"
+                "path={path}\n"
+                "activity={activity}\n"
+                "title={title}"
             ),
         ),
     ])
@@ -87,10 +100,9 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         chain = classify_prompt | llm
         out = chain.invoke({
             "strictness": state.get("strictness", 5),
-            "goal": state.get("goal", ""),
+            "timeblock_goal": state.get("goal", ""),
             "host": state.get("host", ""),
             "path": state.get("path", "/"),
-            "package": state.get("package", ""),
             "activity": state.get("activity", ""),
             "title": state.get("title", ""),
         })
@@ -99,11 +111,21 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         try:
             data = json.loads(raw)
             candidate = str(data.get("classification", "")).strip().lower()
-            if candidate in {"work", "neutral", "distraction", "unhealthy_habit"}:
+            if candidate in {
+                "work",
+                "neutral",
+                "distraction",
+                "unhealthy_habit",
+            }:
                 label = candidate  # type: ignore[assignment]
         except json.JSONDecodeError:
             low = raw.lower()
-            for c in ("work", "neutral", "distraction", "unhealthy_habit"):
+            for c in (
+                "work",
+                "neutral",
+                "distraction",
+                "unhealthy_habit",
+            ):
                 if c in low:
                     label = c  # type: ignore[assignment]
                     break
@@ -178,11 +200,12 @@ REGISTRY.register(
     AgentEntry(
         config=AgentConfig(
             name="Distraction Guardian",
-            description="Fast allow/nudge/block/appeal based on classification and strictness.",
-            model_name=None,
+            description=(
+                "Fast allow/nudge/block/appeal based on classification and "
+                "strictness."
+            ),
+            model_name='gpt-5-nano',
         ),
         build_graph=build_graph,
     ),
 )
-
-

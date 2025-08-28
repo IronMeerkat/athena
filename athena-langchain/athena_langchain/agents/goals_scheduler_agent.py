@@ -13,7 +13,7 @@ from athena_langchain.agents.registry import (
     AgentConfig,
     AgentEntry,
 )
-from athena_langchain.policies.schedule import save_schedule
+from athena_langchain.tools.policies.schedule import save_schedule
 from athena_langchain.memory.chat_history import get_session_history_factory
 
 
@@ -32,9 +32,13 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
                 "You are Athena, a compassionate productivity coach. "
                 "Use the prior conversation in History to respond. "
                 "Work with the user on goals and plan a weekly schedule. "
-                "Output ONLY JSON with keys 'assistant' and 'schedule' (list). "
-                "Each item: {start_minutes:int,end_minutes:int,days:[0..6],goal?:string,strictness:int}. "
-                "Strictness (1..10) influences enforcement only; not goal selection."
+                "Output ONLY JSON with keys 'assistant' and 'schedule' "
+                "(list). "
+                "Each item: "
+                "{start_minutes:int,end_minutes:int,days:[0..6],"
+                "goal?:string,strictness:int}. "
+                "Strictness (1..10) influences enforcement only; "
+                "not goal selection."
             ),
         ),
         (
@@ -77,10 +81,12 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         save_schedule(settings, state["schedule"], session_id=sid)
         # Append to chat history
         try:
-            history.add_user_message(state["user_message"])  # type: ignore[arg-type]
-            history.add_ai_message(state["assistant"])  # type: ignore[arg-type]
-        except Exception:
-            # History persistence is best-effort
+            # type: ignore[arg-type]
+            history.add_user_message(state["user_message"])
+            # type: ignore[arg-type]
+            history.add_ai_message(state["assistant"])
+        except Exception:  # noqa: BLE001 - best-effort history persistence
+            # Ignore connectivity errors when writing history
             pass
         return state
 
@@ -96,12 +102,12 @@ REGISTRY.register(
     AgentEntry(
         config=AgentConfig(
             name="Goals & Scheduler",
-            description="Discuss goals, update memories, create schedule with per-block strictness (1-10).",
-            model_name=None,
+            description=(
+                "Discuss goals, update memories, create schedule with per-"
+                "block strictness (1-10)."
+            ),
+            model_name='gpt-5',
         ),
         build_graph=build_graph,
     ),
 )
-
-
-

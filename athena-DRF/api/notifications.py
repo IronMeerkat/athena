@@ -1,44 +1,45 @@
 """
-Placeholder module for Firebase Cloud Messaging (FCM) integration.
-
-This module defines a thin wrapper around sending push notifications via
-Firebase.  The actual implementation is omitted in this boilerplate.
-When you're ready to integrate FCM, install the ``firebase-admin``
-package and implement ``send_fcm_message`` to construct and send push
-notifications to client devices using your Firebase server key.
+FCM integration using Firebase Admin SDK (HTTP v1).
+No legacy FIREBASE_SERVER_KEY/SENDER_ID required.
 """
 
 from __future__ import annotations
 
 from typing import Any, Dict
 
-from django.conf import settings
+import firebase_admin
+from firebase_admin import messaging
 
 
-def send_fcm_message(token: str, data: Dict[str, Any]) -> None:
+def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
     """
     Send a push notification to a device via Firebase Cloud Messaging.
 
     :param token: The device token identifying the client.
-    :param data: The data payload to send.  Typically this includes
-        notification title/body and any custom fields.
-    :raises RuntimeError: if Firebase credentials are not configured.
+    :param data: Dict that may include 'title' and 'body' plus custom fields.
+    :return: The message ID string from FCM.
     """
-    if not settings.FIREBASE_SERVER_KEY or not settings.FIREBASE_SENDER_ID:
+    if not firebase_admin._apps:
         raise RuntimeError(
-            "Firebase is not configured. Provide FIREBASE_SERVER_KEY and"
-            " FIREBASE_SENDER_ID in your environment or settings."
+            "Firebase Admin is not initialized. Set FIREBASE_CREDENTIALS to the "
+            "path of your service account JSON."
         )
-    # Placeholder: implement your FCM logic here.  For example, using
-    # firebase_admin.messaging to send a Message object.  You might do
-    # something like:
-    #
-    # from firebase_admin import messaging
-    # message = messaging.Message(
-    #     token=token,
-    #     data=data,
-    #     notification=messaging.Notification(title=data.get("title"), body=data.get("body")),
-    # )
-    # response = messaging.send(message)
-    # return response
-    raise NotImplementedError("FCM integration is not implemented in this boilerplate.")
+
+    title = data.get("title")
+    body = data.get("body")
+    notif = messaging.Notification(title=str(title) if title else None,
+                                   body=str(body) if body else None)
+
+    # FCM data payload must be str->str
+    payload = {
+        k: str(v)
+        for k, v in data.items()
+        if k not in {"title", "body"} and v is not None
+    }
+
+    message = messaging.Message(
+        token=token,
+        notification=notif if (title or body) else None,
+        data=payload if payload else None,
+    )
+    return messaging.send(message)

@@ -13,5 +13,4 @@ kombu>=5.3
 redis>=5.0
 psycopg2-binary>=2.9.0
 python-dotenv>=1.0
-# Add your own dependencies (authentication backends, third party
-# integrations) here as the project evolves.
+firebase-admin>=6.5.0

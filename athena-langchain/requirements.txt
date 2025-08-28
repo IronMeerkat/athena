@@ -20,3 +20,5 @@ pgvector>=0.2
 # dependencies here.  For example:
 # openai>=1.0
 # pinecone-client>=3.0
+## MCP server for tool/agent integration
+mcp>=0.1.0

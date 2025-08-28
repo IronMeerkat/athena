@@ -47,10 +47,13 @@ dependencies {
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.navigation.compose)
+  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
   implementation(libs.androidx.core.ktx)
 
   implementation(libs.kotlinx.coroutines.android)
   implementation(platform(libs.firebase.bom))
   implementation(libs.firebase.analytics)
   implementation(libs.firebase.messaging)
+  implementation(libs.firebase.auth)
 }

@@ -11,6 +11,11 @@ android {
     minSdk = 26
     targetSdk = 35
     consumerProguardFiles("consumer-rules.pro")
+    buildConfigField("String", "ATHENA_BASE_URL", "\"https://192.168.0.213:8000\"")
+  }
+
+  buildFeatures {
+    buildConfig = true
   }
 
   compileOptions {
@@ -25,6 +30,8 @@ dependencies {
   implementation(libs.okhttp.logging)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.androidx.datastore.preferences)
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.auth)
 }
 
 
