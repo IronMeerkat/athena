@@ -26,3 +26,4 @@ athena-DRF/athena_drf/athena-5b322-firebase-adminsdk-fbsvc-423b63aba6.json
 *.pyc
 *.egg-info/
 **/__pycache__/
+ai-chat-android/secrets.defaults.properties
