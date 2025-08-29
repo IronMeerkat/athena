@@ -7,7 +7,7 @@ This document proposes a fresh architecture for the Athena Android app with:
 - Local policy cache (temporary blacklist/whitelist with TTL, deterministic whitelist in settings)
 - Override, pause, and “hardcode mode” controls
 - Robust, class-based DRF integrations that work online and offline
-- The app is to be called Athena, the app id/namespace is com.ironmeerkay.athena, the directory within the monorepo is to be called athena-android.
+- The app is to be called Athena, the app id/namespace is com.ironmeerkat.athena, the directory within the monorepo is to be called athena-android.
 
 ---
 
@@ -154,7 +154,7 @@ classDiagram
       +start()
       +observeForeground()
     }
-    class DigiPawsAccessibilityService {
+    class AccessibilityService {
       +onAccessibilityEvent()
       +extractPackageAndUrl()
     }
@@ -203,8 +203,8 @@ classDiagram
     }
 
     AthenaApplication --> ForegroundMonitorService
-    ForegroundMonitorService --> DigiPawsAccessibilityService
-    DigiPawsAccessibilityService --> PolicyEngine
+    ForegroundMonitorService --> AccessibilityService
+    AccessibilityService --> PolicyEngine
     PolicyEngine --> LocalPolicyStore
     PolicyEngine --> DecisionCache
     PolicyEngine --> BlockOverlayController

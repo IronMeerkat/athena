@@ -1,0 +1,7 @@
+---
+description: what packages we should use
+globs:
+alwaysApply: true
+---
+
+- use ksp, not kapt
