@@ -1,0 +1,7 @@
+---
+description: This describes some constraints on Athena's architecture.
+globs:
+alwaysApply: true
+---
+
+- Athena-DRF is the traffic cop, nobody ever talks to her agents except via the DRF.

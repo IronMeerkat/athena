@@ -16,9 +16,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    env_file:
+      - ../.env
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
@@ -29,6 +31,8 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    env_file:
+      - ../.env
     volumes:
       - redis_data:/data
 
@@ -50,12 +54,14 @@ services:
       - redis
       - postgres
       - athena-drf-worker
+    env_file:
+      - ../.env
     environment:
-      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=rpc://
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DATABASE_URL=postgresql://athena:athena@postgres:5432/athena
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
 
   # The public langchain worker processes tasks for users with minimal
   # privileges.  It subscribes to the "public" Celery queue and loads only
@@ -74,12 +80,14 @@ services:
       - rabbitmq
       - redis
       - postgres
+    env_file:
+      - ../.env
     environment:
-      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=rpc://
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DATABASE_URL=postgresql://athena:athena@postgres:5432/athena
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
 
   # The sensitive langchain worker processes tasks that require elevated
   # privileges.  It subscribes to the "sensitive" Celery queue.  You should
@@ -96,12 +104,14 @@ services:
       - rabbitmq
       - redis
       - postgres
+    env_file:
+      - ../.env
     environment:
-      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=rpc://
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DATABASE_URL=postgresql://athena:athena@postgres:5432/athena
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
 
   # PostgreSQL is used for long-term memory storage (user data, historical
   # records, persistent knowledge). This provides durable storage for
@@ -110,10 +120,12 @@ services:
     image: postgres:15-alpine
     ports:
       - "5432:5432"
+    env_file:
+      - ../.env
     environment:
-      POSTGRES_DB: athena
-      POSTGRES_USER: athena
-      POSTGRES_PASSWORD: athena
+      POSTGRES_DB: ${POSTGRES_DB:-athena}
+      POSTGRES_USER: ${POSTGRES_USER:-athena}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-athena}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -130,9 +142,11 @@ services:
       - ../athena-DRF:/app
     depends_on:
       - rabbitmq
+    env_file:
+      - ../.env
     environment:
-      - CELERY_BROKER_URL=amqp://admin:admin@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=rpc://
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
 
 volumes:
   rabbitmq_data:

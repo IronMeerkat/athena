@@ -161,7 +161,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        'api.views.FirebaseAuthentication',
+        'athena_drf.firebase_stuff.FirebaseAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         # "rest_framework.authentication.SessionAuthentication",
         # "rest_framework.authentication.BasicAuthentication",
@@ -172,7 +172,7 @@ REST_FRAMEWORK = {
 # production restrict these to known client origins.
 CORS_ALLOW_ALL_ORIGINS = True
 
-AUTH_USER_MODEL = 'api.models.user.User'
+AUTH_USER_MODEL = 'api.User'
 # Channels configuration: use Redis as the channel layer backend.  This
 # allows WebSocket consumers to communicate across multiple worker
 # processes.  The host/port mirror the values defined in docker-compose.
