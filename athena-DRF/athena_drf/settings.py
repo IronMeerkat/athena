@@ -14,8 +14,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import List, Optional
-
+import urllib.parse as urlparse
 from dotenv import load_dotenv
+
 
 # Load variables from .env file if present.  This allows you to provide
 # secret keys, database URLs and other configuration without modifying
@@ -93,30 +94,18 @@ ASGI_APPLICATION = "athena_drf.asgi.application"
 # Database configuration: use Postgres if DATABASE_URL is provided,
 # otherwise fall back to SQLite for development.
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    # Expected format: postgresql://USER:PASSWORD@HOST:PORT/DBNAME
-    # Django accepts this URL directly via dj_database_url, but to avoid an
-    # extra dependency we parse it minimally here.
-    import urllib.parse as _urlparse
 
-    _parsed = _urlparse.urlparse(DATABASE_URL)
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": _parsed.path.lstrip("/"),
-            "USER": _parsed.username or "",
-            "PASSWORD": _parsed.password or "",
-            "HOST": _parsed.hostname or "localhost",
-            "PORT": str(_parsed.port or 5432),
-        }
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "localhost",
+        "PORT": str(parsed.port or 5432),
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

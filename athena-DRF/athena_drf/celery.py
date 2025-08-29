@@ -14,7 +14,11 @@ import os
 from kombu import Exchange, Queue
 from celery import Celery
 
+import logging
+
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "athena_drf.settings")
+
 
 # Create the Celery app and load configuration from Django settings.  The
 # broker URL, result backend and other Celery options are read from
@@ -25,7 +29,6 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # Autodiscover tasks defined in any installed app.  You can create
 # ``tasks.py`` in your apps (including api) and Celery will find them.
 app.autodiscover_tasks()
-
 
 
 # Define Celery task routes
