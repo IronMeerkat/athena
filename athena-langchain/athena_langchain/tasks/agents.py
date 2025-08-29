@@ -15,6 +15,8 @@ def _serialize_agents(registry) -> Dict[str, dict]:
             "name": cfg.name,
             "description": cfg.description,
             "model_name": cfg.model_name,
+            "llm_provider": getattr(cfg, "llm_provider", None),
+            "temperature": getattr(cfg, "temperature", None),
         }
     return out
 

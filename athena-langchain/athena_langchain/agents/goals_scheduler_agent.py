@@ -107,6 +107,7 @@ REGISTRY.register(
                 "block strictness (1-10)."
             ),
             model_name='gpt-5',
+            temperature=0.8,
         ),
         build_graph=build_graph,
     ),

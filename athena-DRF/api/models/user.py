@@ -40,6 +40,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text=_('Designates whether the user can log into this admin site.'),
     )
 
+    is_staff = models.BooleanField(
+        _('staff status'),
+        default=False,
+        help_text=_('Designates whether the user can log into this admin site.'),
+    )
+
     date_joined = models.DateTimeField(_('date joined'), default=datetime.now)
 
     objects = UserManager()

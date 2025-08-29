@@ -16,6 +16,11 @@ from athena_langchain.tools.policies.schedule import (
 from athena_langchain.agents.registry import REGISTRY, AgentConfig, AgentEntry
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 Decision = Literal["allow", "nudge", "block", "appeal"]
 Classification = Literal["work", "neutral", "distraction", "unhealthy_habit"]
 
@@ -61,8 +66,8 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
                 "does not align with the goal, prefer 'distraction' "
                 "at high strictness.\n"
                 "Return ONLY valid JSON shaped as:"
-                " {\"classification\": "
-                "\"work|neutral|distraction|unhealthy_habit\"}."
+                " {{\"classification\": "
+                "\"work|neutral|distraction|unhealthy_habit\"}}."
             ),
         ),
         (
@@ -174,6 +179,7 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         return state
 
     def project(state: GuardianState) -> GuardianState:
+        logger.info(f"Projecting state: {state}")
         return {
             "event_id": state.get("event_id", ""),
             "decision": state.get("decision", "allow"),

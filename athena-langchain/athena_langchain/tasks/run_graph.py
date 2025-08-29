@@ -23,6 +23,7 @@ from ..agents import __init__ as _agents_imports  # noqa: F401  # ensure registr
 from kombu import Connection, Exchange, Producer
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 @shared_task(bind=True, name="runs.execute_graph")

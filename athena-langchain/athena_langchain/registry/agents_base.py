@@ -13,7 +13,10 @@ from athena_langchain.config import Settings, make_llm
 class AgentConfig:
     name: str
     description: str
+    # Per-agent LLM overrides
     model_name: Optional[str] = None  # override Settings.llm_model
+    llm_provider: Optional[str] = None  # override Settings.llm_provider
+    temperature: Optional[float] = None  # LLM temperature per agent
 
 
 @dataclass
@@ -41,11 +44,12 @@ class AgentRegistry:
 
     def build_llm(self, settings: Settings, agent_id: str) -> BaseChatModel:
         entry = self.get(agent_id)
-        if entry.config.model_name:
-            # Create a temporary settings object with overridden model
-            tmp = Settings(**settings.model_dump())
-            tmp.llm_model = entry.config.model_name
-            return make_llm(tmp)
-        return make_llm(settings)
+        cfg = entry.config
+        return make_llm(
+            settings,
+            provider=cfg.llm_provider,
+            model=cfg.model_name,
+            temperature=cfg.temperature,
+        )
 
 

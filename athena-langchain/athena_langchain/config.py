@@ -1,8 +1,17 @@
 from __future__ import annotations
-
+import urllib.parse as urlparse
+import os
 from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+db_parsed = urlparse.urlparse(DATABASE_URL)
+
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 class Settings(BaseSettings):
@@ -11,24 +20,24 @@ class Settings(BaseSettings):
     app_port: int = 8000
 
     # Postgres
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
-    postgres_db: str = "athena"
-    postgres_user: str = "athena"
-    postgres_password: str = "athena"
+    postgres_host: str = db_parsed.hostname or "localhost"
+    postgres_port: int = db_parsed.port or 5432
+    postgres_db: str = db_parsed.path.lstrip("/")
+    postgres_user: str = db_parsed.username or ""
+    postgres_password: str = db_parsed.password or ""
 
     # Vector config
     vector_table_name: str = "athena_embeddings"
     vector_collection: str = "athena"
 
     # Redis
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 
-    # LLM + Embeddings
+    # LLM + Embeddings (defaults; can be overridden per-agent)
     llm_provider: str = "openai"  # openai or ollama
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "gpt-5-mini"  # per-agent overrides take precedence
     embeddings_provider: str = "openai"
-    openai_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = OPENAI_API_KEY
     ollama_base_url: str = "http://localhost:11434"
 
     model_config = SettingsConfigDict(
@@ -47,18 +56,26 @@ class Settings(BaseSettings):
 
 # ---- Factories for LLMs and Embeddings ----
 
-def make_llm(settings: Settings):
-    provider = settings.llm_provider.lower()
-    if provider == "openai":
+def make_llm(
+    settings: Settings,
+    *,
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
+    temperature: Optional[float] = None,
+):
+    eff_provider = (provider or settings.llm_provider).lower()
+    eff_model = model or settings.llm_model
+    eff_temperature = 0.0 if temperature is None else float(temperature)
+    if eff_provider == "openai":
         from langchain_openai import ChatOpenAI
 
-        return ChatOpenAI(model=settings.llm_model, api_key=settings.openai_api_key, temperature=0)
-    elif provider == "ollama":
+        return ChatOpenAI(model=eff_model, api_key=settings.openai_api_key, temperature=eff_temperature)
+    elif eff_provider == "ollama":
         from langchain_community.chat_models.ollama import ChatOllama
 
-        return ChatOllama(model=settings.llm_model, base_url=settings.ollama_base_url, temperature=0)
+        return ChatOllama(model=eff_model, base_url=settings.ollama_base_url, temperature=eff_temperature)
     else:
-        raise ValueError(f"Unsupported LLM_PROVIDER: {settings.llm_provider}")
+        raise ValueError(f"Unsupported LLM_PROVIDER: {eff_provider}")
 
 
 def make_embeddings(settings: Settings):
