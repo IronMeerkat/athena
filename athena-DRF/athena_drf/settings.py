@@ -95,6 +95,7 @@ ASGI_APPLICATION = "athena_drf.asgi.application"
 # otherwise fall back to SQLite for development.
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+parsed = urlparse.urlparse(DATABASE_URL)
 
 DATABASES = {
     "default": {
