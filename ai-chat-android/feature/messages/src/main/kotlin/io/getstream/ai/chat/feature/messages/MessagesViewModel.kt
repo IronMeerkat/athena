@@ -18,14 +18,6 @@ package com.ironmeerkat.athena.feature.messages
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
-// Replace these with your own, which connect to Athena instead of Gemini
-import com.google.ai.client.generativeai.Chat
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.Content
-import com.google.ai.client.generativeai.type.TextPart
-import com.google.ai.client.generativeai.type.asTextOrNull
-import com.google.ai.client.generativeai.type.generationConfig
-
 
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -35,6 +27,8 @@ import com.ironmeerkat.athena.core.data.repository.ChannelsRepository
 import com.ironmeerkat.athena.core.data.repository.MessagesRepository
 import com.ironmeerkat.athena.core.model.Channel
 import com.ironmeerkat.athena.core.model.Message
+import com.ironmeerkat.athena.api.AthenaClient
+import com.ironmeerkat.athena.api.di.AthenaDefaultAgent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,13 +36,18 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = MessagesViewModel.Factory::class)
 class MessagesViewModel @AssistedInject constructor(
   channelsRepository: ChannelsRepository,
   private val messagesRepository: MessagesRepository,
+  private val athenaClient: AthenaClient,
+  @AthenaDefaultAgent private val defaultAgent: String,
   @Assisted private val index: Int,
 ) : ViewModel() {
 
@@ -70,65 +69,51 @@ class MessagesViewModel @AssistedInject constructor(
       initialValue = emptyList(),
     )
 
-  private val model = GenerativeModel(
-    modelName = "gemini-pro",
-    apiKey = BuildConfig.GEMINI_API_KEY,
-    generationConfig = generationConfig {
-      temperature = 0.5f
-      candidateCount = 1
-      maxOutputTokens = 1000
-      topK = 30
-      topP = 0.5f
-    },
-  )
-
-  private val generativeChat: StateFlow<Chat> = messages.mapLatest { messageList ->
-    model.startChat(
-      history = messageList.map { singleMessage ->
-        Content(
-          parts = listOf(TextPart(singleMessage.message)),
+  private val events: MutableStateFlow<ChatEvent> = MutableStateFlow(ChatEvent.Nothing)
+  val latestResponse: StateFlow<String?> = events
+    .flatMapLatest { event ->
+      if (event is ChatEvent.SendMessage) {
+        // Build a minimal JSON input the server-side agent understands.
+        val input = buildJsonObject {
+          put("text", event.message)
+          put("actor", "android")
+        }
+        // Stream from Athena as text chunks.
+        athenaClient.streamText(
+          agentId = defaultAgent,
+          input = input,
+          sensitive = false,
         )
-      },
-    )
-  }.stateIn(
-    scope = viewModelScope,
-    started = SharingStarted.WhileSubscribed(5000),
-    initialValue = model.startChat(),
-  )
-
-  private val events: MutableStateFlow<MessagesEvent> = MutableStateFlow(MessagesEvent.Nothing)
-  val latestResponse: StateFlow<String?> = events.flatMapLatest { event ->
-    if (event is MessagesEvent.SendMessage) {
-      generativeChat.value.sendMessageStream(event.message).map { it.text }
-    } else {
-      flowOf("")
+      } else {
+        flowOf("")
+      }
     }
-  }.stateIn(
-    scope = viewModelScope,
-    started = SharingStarted.WhileSubscribed(5000),
-    initialValue = null,
-  )
+    .stateIn(
+      scope = viewModelScope,
+      started = SharingStarted.WhileSubscribed(5000),
+      initialValue = null,
+    )
 
-  fun isCompleted(text: String?): Boolean {
-    return generativeChat.value.history.any { it.parts.any { it.asTextOrNull() == text } }
-  }
+  // Simple completion condition: when server indicates end by sending an empty chunk or UI decides.
+  fun isCompleted(text: String?): Boolean = text.isNullOrEmpty()
 
   fun handleEvents(messagesEvent: MessagesEvent) {
     this.events.value = messagesEvent
     when (messagesEvent) {
-      is MessagesEvent.SendMessage -> sendMessage(
+      is ChatEvent.SendMessage -> sendMessage(
         message = messagesEvent.message,
         sender = messagesEvent.sender,
       )
 
-      is MessagesEvent.CompleteGeneration -> {
+      is ChatEvent.CompleteGeneration -> {
         sendMessage(
           message = messagesEvent.message,
           sender = messagesEvent.sender,
         )
       }
 
-      is MessagesEvent.Nothing -> Unit
+      is ChatEvent.Nothing -> Unit
+      else -> Unit
     }
   }
 
@@ -147,11 +132,3 @@ class MessagesViewModel @AssistedInject constructor(
   }
 }
 
-sealed interface MessagesEvent {
-
-  data object Nothing : MessagesEvent
-
-  data class SendMessage(val message: String, val sender: String) : MessagesEvent
-
-  data class CompleteGeneration(val message: String, val sender: String) : MessagesEvent
-}

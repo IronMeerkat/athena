@@ -38,4 +38,6 @@ secrets {
 dependencies {
   implementation(libs.stream.log)
   implementation(libs.compose.markdown)
+  implementation(projects.athenaApi)
+  implementation(libs.kotlinx.serialization.json)
 }

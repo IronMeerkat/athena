@@ -97,7 +97,7 @@ fun Messages(
   LaunchedEffect(key1 = isCompleted) {
     if (isCompleted) {
       messagesViewModel.handleEvents(
-        MessagesEvent.CompleteGeneration(
+        ChatEvent.CompleteGeneration(
           message = generatedMessage,
           sender = "AI",
         ),
@@ -128,7 +128,7 @@ fun Messages(
       onTextChanged = onTextChanged,
       onSendMessage = {
         messagesViewModel.handleEvents(
-          MessagesEvent.SendMessage(
+          ChatEvent.SendMessage(
             message = text,
             sender = "User",
           ),
