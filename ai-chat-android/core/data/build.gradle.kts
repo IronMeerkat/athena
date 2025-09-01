@@ -25,5 +25,5 @@ android {
 
 dependencies {
   api(projects.core.network)
-  api(libs.google.generativeai)
+  implementation(projects.athenaApi)
 }

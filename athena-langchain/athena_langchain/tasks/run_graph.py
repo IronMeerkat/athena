@@ -89,9 +89,28 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
 
 
     try:
-        result = runnable.invoke(payload)
+        # Include session_id and lifecycle flags to the agent
+        enriched: Dict[str, Any] = {}
+        try:
+            enriched = dict(payload or {})
+            meta = cap.metadata or {}
+            if meta.get("session_id") and not enriched.get("session_id"):
+                enriched["session_id"] = meta.get("session_id")
+        except Exception:
+            enriched = payload or {}
+
+        result = runnable.invoke(enriched)
         logger.info(f"result: {result}")
         result = result or True
+        # forward assistant text if present
+        if isinstance(result, dict):
+            assistant = result.get("assistant") or ""
+            if isinstance(assistant, str) and assistant:
+                publish("assistant", {"assistant": assistant})
+            # If agent provided a history snapshot (e.g., on disconnect), forward it
+            history_snapshot = result.get("history_snapshot")
+            if history_snapshot:
+                publish("history_snapshot", history_snapshot)
         publish("run_completed", result)
 
         return {

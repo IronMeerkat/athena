@@ -15,45 +15,55 @@
  */
 package com.ironmeerkat.athena.core.data.repository
 
-import com.google.firebase.database.DatabaseReference
-import com.skydoves.firebase.database.ktx.flow
+import com.ironmeerkat.athena.api.AthenaService
+import com.ironmeerkat.athena.api.dto.ChatMessageDto
 import com.ironmeerkat.athena.core.model.Channel
 import com.ironmeerkat.athena.core.model.ChannelsSnapshot
 import com.ironmeerkat.athena.core.model.Message
-import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.json.Json
-import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 internal class ChannelsRepositoryImpl @Inject constructor(
-  private val databaseReference: DatabaseReference,
-  private val json: Json,
+  private val service: AthenaService,
 ) : ChannelsRepository {
 
-  override fun fetchChannels(): Flow<Result<ChannelsSnapshot?>> {
-    return databaseReference.flow(
-      path = { snapshot -> snapshot },
-      decodeProvider = { jsonString ->
-        json.decodeFromString(jsonString)
-      },
-    )
+  override fun fetchChannels(): Flow<Result<ChannelsSnapshot?>> = flow {
+    try {
+      val resp = service.getChats()
+      val channels: List<Channel> = resp.chats.map { summary ->
+        val msgs: List<Message> = summary.lastMessage?.let { listOf(it.toUiMessage()) } ?: emptyList()
+        Channel(id = summary.id, messages = msgs)
+      }
+      emit(Result.success(ChannelsSnapshot(channels)))
+    } catch (t: Throwable) {
+      emit(Result.failure(t))
+    }
   }
 
-  override fun fetchChannel(index: Int): Flow<Result<Channel?>> {
-    return databaseReference.flow(
-      path = { snapshot -> snapshot.child("channels/$index") },
-      decodeProvider = { jsonString ->
-        json.decodeFromString(jsonString)
-      },
-    )
+  override fun fetchChannel(index: Int): Flow<Result<Channel?>> = flow {
+    try {
+      val chats = service.getChats().chats
+      if (index < 0 || index >= chats.size) {
+        emit(Result.success(null))
+        return@flow
+      }
+      val summary = chats[index]
+      val history = service.getChatMessages(summary.id)
+      val messages = history.messages.map { it.toUiMessage() }
+      emit(Result.success(Channel(id = summary.id, messages = messages)))
+    } catch (t: Throwable) {
+      emit(Result.failure(t))
+    }
   }
 
   override fun addChannel(channels: List<Channel>) {
-    val newChannels = channels + Channel(
-      id = UUID.randomUUID().toString(),
-      messages = listOf(Message.defaultMessage()),
-    )
-
-    databaseReference.child("channels").setValue(newChannels)
+    // No-op for now; server creates chats implicitly on WS connect.
   }
 }
+
+private fun ChatMessageDto.toUiMessage(): Message =
+  Message(
+    sender = if (role.equals("assistant", ignoreCase = true)) "AI" else "User",
+    message = content,
+  )

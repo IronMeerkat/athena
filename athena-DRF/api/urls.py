@@ -26,6 +26,10 @@ urlpatterns = [
     path("device/attempt", views.DeviceAttemptView.as_view(), name="api-device-attempt"),
     path("device/permit", views.DevicePermitView.as_view(), name="api-device-permit"),
 
+    # Chats API
+    path("chats", views.ChatsListView.as_view(), name="api-chats-list"),
+    path("chats/<str:chat_id>/messages", views.ChatMessagesView.as_view(), name="api-chat-messages"),
+
     # JWT auth
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

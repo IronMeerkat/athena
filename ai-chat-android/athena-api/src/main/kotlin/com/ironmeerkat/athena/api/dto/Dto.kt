@@ -56,4 +56,40 @@ data class DevicePermitResponse(
   val until: String,
 )
 
+// ---- Chats ----
+
+@Serializable
+data class ChatsListResponse(
+  val chats: List<ChatSummary>,
+)
+
+@Serializable
+data class ChatSummary(
+  val id: String,
+  val title: String = "",
+  @SerialName("updated_at") val updatedAt: String,
+  @SerialName("last_message") val lastMessage: ChatMessageDto? = null,
+)
+
+@Serializable
+data class ChatMessagesResponse(
+  val chat: ChatDetail,
+  val messages: List<ChatMessageDto>,
+)
+
+@Serializable
+data class ChatDetail(
+  val id: String,
+  val title: String = "",
+  @SerialName("created_at") val createdAt: String,
+  @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class ChatMessageDto(
+  val role: String,
+  val content: String,
+  @SerialName("created_at") val createdAt: String,
+)
+
 

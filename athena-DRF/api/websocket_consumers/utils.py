@@ -90,6 +90,15 @@ class BaseConsumer(AsyncWebsocketConsumer):
                             text = data.get("assistant") or data.get("text") or data.get("message")
                         if text:
                             data = {"text": text}
+                            # Allow subclass hook to persist assistant messages
+                            try:
+                                # Use duck typing to call on_agent_message if implemented
+                                getattr(self, "on_agent_message")(text)  # type: ignore[attr-defined]
+                            except Exception:
+                                pass
+                        # Special case: forward history snapshots so client can sync
+                        if event_type == "history_snapshot":
+                            data = {"history_snapshot": data}
                         from asgiref.sync import async_to_sync
                         async_to_sync(self.channel_layer.group_send)(
                             self.group_name,
