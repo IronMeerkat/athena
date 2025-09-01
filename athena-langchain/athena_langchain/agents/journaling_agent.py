@@ -1,22 +1,28 @@
 from __future__ import annotations
 
 import json
-from typing import TypedDict
+from typing import TypedDict, Optional, Any, Dict
 
 from langgraph.graph import END, StateGraph
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 
 from athena_langchain.config import Settings
-from athena_langchain.registry import PUBLIC_AGENTS as REGISTRY
+from athena_langchain.registry import SENSITIVE_AGENTS as REGISTRY
 from athena_langchain.registry.agents_base import (
     AgentConfig,
     AgentEntry,
 )
 
 
-class AgentState(TypedDict):
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+class AgentState(TypedDict, total=False):
     user_message: str
+    text: str
     assistant: str
 
 
@@ -38,13 +44,28 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
     ])
 
     def converse(state: AgentState) -> AgentState:
+        # Normalize DRF-style payloads: accept either "user_message" or "text"
+        logger.info(f"state: {state}")
+        incoming_text = str(state.get("user_message") or state.get("text") or "").strip()
+
+        if state.get("disconnect"):
+            logger.info(f"disconnect: {state.get('disconnect')}")
+            # return
+            # TODO implement some summary agent/tool here
+
+
+        # No-op on empty input: return ack by leaving assistant empty
+        if not incoming_text:
+            state["assistant"] = ""
+            return state
+
         chain = prompt | llm
         out = chain.invoke({
-            "user_message": state["user_message"],
+            "user_message": incoming_text,
         })
-        # LangChain BaseMessage has .content; fallback to string
-        content = getattr(out, "content", None)
-        text = (content if isinstance(content, str) else str(out)).strip()
+
+        logger.info(f"content: {out.content}")
+        text = (out.content if isinstance(out.content, str) else str(out)).strip()
         state["assistant"] = text
         return state
 

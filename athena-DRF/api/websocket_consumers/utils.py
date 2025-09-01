@@ -10,6 +10,11 @@ from django.conf import settings
 from celery import current_app as celery_app
 from kombu import Connection, Exchange, Queue
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class BaseConsumer(AsyncWebsocketConsumer):
     """Base WebSocket consumer for all consumers."""
@@ -32,7 +37,13 @@ class BaseConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
         except Exception:
             data = {"text": text_data}
+
+        logger.info(f"data: {data}")
         await self._start_agent_run(data)
+
+    async def send(self, text_data: str | None = None, bytes_data: bytes | None = None) -> None:
+        logger.info(f"text_data={text_data}, bytes_data={bytes_data}")
+        await super().send(text_data=text_data, bytes_data=bytes_data)
 
     async def disconnect(self, close_code: int) -> None:
         await self.channel_layer.group_discard(self.group_name, self.channel_name)

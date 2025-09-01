@@ -34,10 +34,9 @@ class JournalConsumer(BaseConsumer):
             "queue": "sensitive",
         }
 
-    async def connect(self) -> None:
-        await super().connect()
-        await self._start_agent_run({"text": ""})
-
     async def journaling_message(self, event: Dict[str, Any]) -> None:  # type: ignore[override]
-        await self.send(json.dumps({"type": "message", "data": event.get("data", {})}))
+        await self.send(json.dumps(event))
 
+    async def disconnect(self, close_code: int) -> None:
+        await self.send(json.dumps({"type": "message", "disconnect": True}))
+        await super().disconnect(close_code)

@@ -87,38 +87,21 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
             # Best-effort publishing; do not fail the run on stream errors
             pass
 
-    publish("run_started", {"agent_id": agent_id})
 
     try:
-        # Stream-like instrumentation: publish decision/nudge/block events if present
         result = runnable.invoke(payload)
-        if isinstance(result, dict):
-            # Guardian decisions
-            if "decision" in result:
-                publish("decision", result)
-            # Appeals outcomes
-            if result.get("allow") is not None and result.get("minutes") is not None:
-                publish("appeal_outcome", result)
-            # Generic chat message for conversational agents
-            assistant_text = None
-            if isinstance(result.get("assistant"), str):
-                assistant_text = result.get("assistant")
-            elif isinstance(result.get("message"), str):
-                assistant_text = result.get("message")
-            elif isinstance(result.get("text"), str):
-                assistant_text = result.get("text")
-            if assistant_text:
-                publish("chat_message", {"assistant": str(assistant_text)})
+        logger.info(f"result: {result}")
+        result = result or True
+        publish("run_completed", result)
+
+        return {
+            "status": "ok",
+            "run_id": run_id,
+            "agent_id": agent_id,
+            "result": result,
+            "ack": True,
+        }
     except Exception as e:  # noqa: BLE001
         logger.exception("Agent %s failed: %s", agent_id, e)
         publish("run_error", {"message": str(e)})
         return {"status": "error", "message": str(e)}
-
-    publish("run_completed", {"result": result})
-
-    return {
-        "status": "ok",
-        "run_id": run_id,
-        "agent_id": agent_id,
-        "result": result,
-    }
