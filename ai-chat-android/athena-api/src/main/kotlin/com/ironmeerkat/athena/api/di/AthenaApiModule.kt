@@ -22,13 +22,7 @@ import okhttp3.MediaType.Companion.toMediaType
 @InstallIn(SingletonComponent::class)
 internal object AthenaApiModule {
 
-  /** Provides a configured JSON serializer/deserializer used by Retrofit and parsing SSE data. */
-  @Provides
-  @Singleton
-  fun provideJson(): Json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-  }
+  // Json is provided by core network module to avoid duplicate bindings.
 
   /** Expose the server base URL from secrets-generated BuildConfig. */
   @Provides

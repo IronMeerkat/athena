@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import com.ironmeerkat.athena.api.util.contentOrNull
 
 /**
  * Describes a DRF WebSocket subservice mounted under /ws/{name}/{sessionId}.

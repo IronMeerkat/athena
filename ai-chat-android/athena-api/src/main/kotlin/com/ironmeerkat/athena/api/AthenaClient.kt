@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import com.ironmeerkat.athena.api.util.contentOrNull
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request

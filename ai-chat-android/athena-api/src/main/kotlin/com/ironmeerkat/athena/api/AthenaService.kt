@@ -20,7 +20,7 @@ import retrofit2.http.Path
  * orchestration (like starting runs and streaming events) lives in
  * [AthenaClient].
  */
-internal interface AthenaService {
+interface AthenaService {
 
   /** POST /api/runs/ — queue a new run on the server. */
   @POST("api/runs/")

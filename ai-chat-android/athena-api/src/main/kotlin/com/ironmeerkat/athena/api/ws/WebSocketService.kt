@@ -29,14 +29,14 @@ class WebSocketService @Inject constructor(
     sessionId: String,
     outgoingMessages: Flow<String>,
   ): Flow<String> = callbackFlow {
-    val url = baseUrl.newBuilder()
-      .scheme(if (baseUrl.scheme == "https") "wss" else "ws")
-      .host(baseUrl.host)
-      .port(baseUrl.port)
+    val httpUrl = baseUrl.newBuilder()
       .addEncodedPathSegments("ws/${subservice.name}/$sessionId")
       .build()
 
-    val request = Request.Builder().url(url).build()
+    // OkHttp's HttpUrl only supports http/https schemes; for WebSocket use a String URL.
+    val wsUrl = httpUrl.toString().replaceFirst("^http".toRegex(), "ws")
+
+    val request = Request.Builder().url(wsUrl).build()
     val ws = okHttp.newWebSocket(request, object : okhttp3.WebSocketListener() {
       override fun onMessage(webSocket: okhttp3.WebSocket, text: String) {
         try {
