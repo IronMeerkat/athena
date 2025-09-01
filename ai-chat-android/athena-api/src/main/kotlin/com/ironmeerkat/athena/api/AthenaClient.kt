@@ -21,6 +21,8 @@ import okhttp3.Request
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Response
+import com.ironmeerkat.athena.api.ws.WebSocketService
+import com.ironmeerkat.athena.api.ws.subservices.JournalWebSocketSubservice
 import okio.BufferedSource
 
 /**
@@ -36,6 +38,8 @@ class AthenaClient @Inject constructor(
   private val okHttp: OkHttpClient,
   private val baseUrl: HttpUrl,
   private val json: Json,
+  private val wsService: WebSocketService,
+  private val journalWs: JournalWebSocketSubservice,
 ) {
 
   /** Starts a run and returns the new run ID. */
@@ -135,52 +139,7 @@ class AthenaClient @Inject constructor(
   fun openJournalingWebSocket(
     sessionId: String,
     outgoingMessages: Flow<String>,
-  ): Flow<String> = callbackFlow {
-    val url = baseUrl.newBuilder()
-      .scheme(if (baseUrl.scheme == "https") "wss" else "ws")
-      .host(baseUrl.host)
-      .port(baseUrl.port)
-      .addEncodedPathSegments("ws/journal/$sessionId")
-      .build()
-
-    val request = Request.Builder().url(url).build()
-    val ws = okHttp.newWebSocket(request, object : okhttp3.WebSocketListener() {
-      override fun onMessage(webSocket: okhttp3.WebSocket, text: String) {
-        try {
-          val element = json.parseToJsonElement(text)
-          val obj = element as? JsonObject
-          val data = obj?.get("data") as? JsonObject
-          val msg = (data?.get("text") as? JsonPrimitive)?.contentOrNull
-          if (!msg.isNullOrBlank()) trySend(msg).isSuccess
-        } catch (_: Throwable) {
-          trySend(text).isSuccess
-        }
-      }
-
-      override fun onClosed(webSocket: okhttp3.WebSocket, code: Int, reason: String) {
-        close()
-      }
-
-      override fun onFailure(webSocket: okhttp3.WebSocket, t: Throwable, response: Response?) {
-        close(t)
-      }
-    })
-
-    // Forward outgoing messages to the websocket as raw text
-    val sendJob = launch {
-      try {
-        outgoingMessages.collect { msg ->
-          if (msg.isNotBlank()) ws.send(msg)
-        }
-      } catch (_: Throwable) {
-      }
-    }
-
-    awaitClose {
-      try { ws.cancel() } catch (_: Throwable) {}
-      try { sendJob.cancel() } catch (_: Throwable) {}
-    }
-  }
+  ): Flow<String> = wsService.open(journalWs, sessionId, outgoingMessages)
 
   /**
    * Tries to parse a JSON object and extract a human-readable text field.

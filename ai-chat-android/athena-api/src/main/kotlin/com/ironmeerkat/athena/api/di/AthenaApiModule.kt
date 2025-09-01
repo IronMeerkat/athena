@@ -84,6 +84,22 @@ internal object AthenaApiModule {
   fun provideAthenaService(retrofit: Retrofit): AthenaService =
     retrofit.create(AthenaService::class.java)
 
+  /** WebSocket manager for DRF subservices. */
+  @Provides
+  @Singleton
+  fun provideWebSocketService(
+    client: OkHttpClient,
+    @AthenaBaseUrl baseUrl: HttpUrl,
+    json: Json,
+  ): com.ironmeerkat.athena.api.ws.WebSocketService =
+    com.ironmeerkat.athena.api.ws.WebSocketService(client, baseUrl, json)
+
+  /** Default journaling WS subservice. */
+  @Provides
+  @Singleton
+  fun provideJournalWebSocketSubservice(): com.ironmeerkat.athena.api.ws.subservices.JournalWebSocketSubservice =
+    com.ironmeerkat.athena.api.ws.subservices.JournalWebSocketSubservice()
+
   /** High-level client that orchestrates runs and streaming. */
   @Provides
   @Singleton
@@ -92,7 +108,9 @@ internal object AthenaApiModule {
     client: OkHttpClient,
     @AthenaBaseUrl baseUrl: HttpUrl,
     json: Json,
-  ): AthenaClient = AthenaClient(service, client, baseUrl, json)
+    wsService: com.ironmeerkat.athena.api.ws.WebSocketService,
+    journalSubservice: com.ironmeerkat.athena.api.ws.subservices.JournalWebSocketSubservice,
+  ): AthenaClient = AthenaClient(service, client, baseUrl, json, wsService, journalSubservice)
 }
 
 
