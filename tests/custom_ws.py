@@ -68,6 +68,7 @@ class ConnectedWebSocket:
         deadline = time.time() + max_seconds
         while time.time() < deadline:
             msg = self.recv_json(timeout=max(0.01, deadline - time.time()))
+            print(f"Received message: {msg}")
             yield msg
             if predicate(msg):
                 return
