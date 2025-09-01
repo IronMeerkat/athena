@@ -9,12 +9,13 @@ are simple stubs you should replace with your own real‑time logic.
 
 from django.urls import path
 
-from . import consumers
+from .websocket_consumers import AppealsConsumer, EchoConsumer, JournalConsumer
 
 # List of websocket URL patterns.  Each path here will be routed
 # exclusively for WebSocket connections via the ASGI application defined
 # in ``athena_drf.asgi.application``.
 websocket_urlpatterns = [
-    path("ws/echo/", consumers.EchoConsumer.as_asgi(), name="ws-echo"),
-    path("ws/appeals/<str:event_id>", consumers.AppealsConsumer.as_asgi(), name="ws-appeals"),
+    path("ws/echo/", EchoConsumer.as_asgi(), name="ws-echo"),
+    path("ws/appeals/<str:event_id>", AppealsConsumer.as_asgi(), name="ws-appeals"),
+    path("ws/journal/<str:session_id>", JournalConsumer.as_asgi(), name="ws-journal"),
 ]

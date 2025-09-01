@@ -29,7 +29,7 @@ services:
       - athena
 
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     ports:
       - "5432:5432"
     env_file:
@@ -40,6 +40,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-athena}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./sql/init-vector.sql:/docker-entrypoint-initdb.d/init-vector.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U athena -d athena"]
       interval: 10s
@@ -49,26 +50,26 @@ services:
       - athena
 
 
-  athena-langchain-public:
-    build: ../athena-langchain
-    command: ["bash", "-c", "celery -A athena_langchain.celery worker -Q public -n public_worker@%h --concurrency=1"]
-    volumes:
-      - ../athena-langchain:/app
-    depends_on:
-      - rabbitmq
-      - redis
-      - postgres
-    env_file:
-      - ../.env
-    environment:
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    networks:
-      - athena
+  # athena-langchain-public:
+  #   build: ../athena-langchain
+  #   command: ["bash", "-c", "celery -A athena_langchain.celery worker -Q public -n public_worker@%h --concurrency=1"]
+  #   volumes:
+  #     - ../athena-langchain:/app
+  #   depends_on:
+  #     - rabbitmq
+  #     - redis
+  #     - postgres
+  #   env_file:
+  #     - ../.env
+  #   environment:
+  #     - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
+  #     - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
+  #     - REDIS_HOST=${REDIS_HOST:-redis}
+  #     - REDIS_PORT=${REDIS_PORT:-6379}
+  #     - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #   networks:
+  #     - athena
 
   athena-langchain-sensitive:
     build: ../athena-langchain

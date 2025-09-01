@@ -7,6 +7,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -121,6 +123,62 @@ class AthenaClient @Inject constructor(
 
     awaitClose {
       try { call.cancel() } catch (_: Throwable) {}
+    }
+  }
+
+  /**
+   * Opens a WebSocket to DRF for an ephemeral journaling session.
+   * - sessionId: client-generated correlation id (e.g., UUID).
+   * - on open, you can send user messages as raw text JSON: {"text": "..."}
+   * - emits assistant text responses pushed by DRF.
+   */
+  fun openJournalingWebSocket(
+    sessionId: String,
+    outgoingMessages: Flow<String>,
+  ): Flow<String> = callbackFlow {
+    val url = baseUrl.newBuilder()
+      .scheme(if (baseUrl.scheme == "https") "wss" else "ws")
+      .host(baseUrl.host)
+      .port(baseUrl.port)
+      .addEncodedPathSegments("ws/journal/$sessionId")
+      .build()
+
+    val request = Request.Builder().url(url).build()
+    val ws = okHttp.newWebSocket(request, object : okhttp3.WebSocketListener() {
+      override fun onMessage(webSocket: okhttp3.WebSocket, text: String) {
+        try {
+          val element = json.parseToJsonElement(text)
+          val obj = element as? JsonObject
+          val data = obj?.get("data") as? JsonObject
+          val msg = (data?.get("text") as? JsonPrimitive)?.contentOrNull
+          if (!msg.isNullOrBlank()) trySend(msg).isSuccess
+        } catch (_: Throwable) {
+          trySend(text).isSuccess
+        }
+      }
+
+      override fun onClosed(webSocket: okhttp3.WebSocket, code: Int, reason: String) {
+        close()
+      }
+
+      override fun onFailure(webSocket: okhttp3.WebSocket, t: Throwable, response: Response?) {
+        close(t)
+      }
+    })
+
+    // Forward outgoing messages to the websocket as raw text
+    val sendJob = launch {
+      try {
+        outgoingMessages.collect { msg ->
+          if (msg.isNotBlank()) ws.send(msg)
+        }
+      } catch (_: Throwable) {
+      }
+    }
+
+    awaitClose {
+      try { ws.cancel() } catch (_: Throwable) {}
+      try { sendJob.cancel() } catch (_: Throwable) {}
     }
   }
 

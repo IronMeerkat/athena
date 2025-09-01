@@ -90,21 +90,22 @@ fun Messages(
   val (text, onTextChanged) = remember { mutableStateOf("") }
 
   LaunchedEffect(key1 = latestResponse) {
-    latestResponse?.let { generatedMessage += it }
-  }
-
-  val isCompleted by remember { derivedStateOf { messagesViewModel.isCompleted(generatedMessage) } }
-  LaunchedEffect(key1 = isCompleted) {
-    if (isCompleted) {
-      messagesViewModel.handleEvents(
-        ChatEvent.CompleteGeneration(
-          message = generatedMessage,
-          sender = "AI",
-        ),
-      )
-      generatedMessage = ""
+    latestResponse?.let {
+      // Treat each websocket emission as a complete assistant message.
+      generatedMessage += it
+      if (generatedMessage.isNotBlank()) {
+        messagesViewModel.handleEvents(
+          ChatEvent.CompleteGeneration(
+            message = generatedMessage,
+            sender = "AI",
+          ),
+        )
+        generatedMessage = ""
+      }
     }
   }
+
+  // For websocket-based journaling, we complete per emission above.
 
   LaunchedEffect(key1 = messages, key2 = generatedMessage) {
     if (messages.isNotEmpty()) {

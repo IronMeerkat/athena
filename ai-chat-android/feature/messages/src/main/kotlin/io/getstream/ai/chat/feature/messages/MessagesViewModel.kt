@@ -29,6 +29,7 @@ import com.ironmeerkat.athena.core.model.Channel
 import com.ironmeerkat.athena.core.model.Message
 import com.ironmeerkat.athena.api.AthenaClient
 import com.ironmeerkat.athena.api.di.AthenaDefaultAgent
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.mapLatest
+import java.util.UUID
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -70,24 +72,10 @@ class MessagesViewModel @AssistedInject constructor(
     )
 
   private val events: MutableStateFlow<ChatEvent> = MutableStateFlow(ChatEvent.Nothing)
-  val latestResponse: StateFlow<String?> = events
-    .flatMapLatest { event ->
-      if (event is ChatEvent.SendMessage) {
-        // Build a minimal JSON input the server-side agent understands.
-        val input = buildJsonObject {
-          put("text", event.message)
-          put("actor", "android")
-        }
-        // Stream from Athena as text chunks.
-        athenaClient.streamText(
-          agentId = defaultAgent,
-          input = input,
-          sensitive = false,
-        )
-      } else {
-        flowOf("")
-      }
-    }
+  private val outgoingMessages: MutableSharedFlow<String> = MutableSharedFlow(extraBufferCapacity = 16)
+  private val sessionId: String = UUID.randomUUID().toString()
+  val latestResponse: StateFlow<String?> = athenaClient
+    .openJournalingWebSocket(sessionId = sessionId, outgoingMessages = outgoingMessages)
     .stateIn(
       scope = viewModelScope,
       started = SharingStarted.WhileSubscribed(5000),
@@ -104,6 +92,10 @@ class MessagesViewModel @AssistedInject constructor(
         message = messagesEvent.message,
         sender = messagesEvent.sender,
       )
+        .also {
+          // forward the raw text to the websocket
+          outgoingMessages.tryEmit(messagesEvent.message)
+        }
 
       is ChatEvent.CompleteGeneration -> {
         sendMessage(
