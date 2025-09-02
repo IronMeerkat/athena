@@ -25,6 +25,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     device_token = models.CharField(_('device token'), max_length=255, blank=True)
     extension_client_id = models.CharField(_('extension client id'), max_length=255, blank=True)
 
+    # External identities
+    telegram_user_id = models.BigIntegerField(_('telegram user id'), blank=True, null=True, unique=True)
+
     is_active = models.BooleanField(
         _('active'),
         default=True,

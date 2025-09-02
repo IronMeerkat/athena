@@ -37,6 +37,7 @@ DEBUG: bool = os.getenv("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes"}
 
 ALLOWED_HOSTS: List[str] = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
+TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN")
 # Application definition
 
 INSTALLED_APPS = [

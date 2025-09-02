@@ -15,7 +15,7 @@ from athena_langchain.registry.agents_base import (
     AgentEntry,
 )
 from athena_langchain.memory.chat_history import get_session_history_factory
-
+from athena_langchain.celery import app as celery_app
 
 import logging
 
@@ -56,7 +56,18 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         incoming_text = str(state.get("user_message") or state.get("text") or "").strip()
         session_id = str(state.get("session_id") or "").strip()
         history_factory = get_session_history_factory(settings)
-        redis_history = history_factory(session_id) if session_id else None
+        redis_history = history_factory(session_id)
+
+        def respond(state: AgentState) -> AgentState:
+            if session_id.startswith("telegram:"):
+                chat_id = session_id.split(":")[1]
+                # Route to DRF worker's gateway queue so DRF persists and relays to Telegram
+                celery_app.send_task(
+                    "recieved.telegram",
+                    args=[chat_id, state.get("assistant", "")],
+                    queue="gateway",
+                )
+            return state
 
         def to_lc_messages(items: List[Dict[str, str]]) -> List[BaseMessage]:
             messages: List[BaseMessage] = []
@@ -72,58 +83,41 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
             return messages
 
         if state.get("connect"):
-            convo_history = state.get("convo_history") or []
+            convo_history = state.get("convo_history")
             logger.info(f"connect: {state.get('connect')}")
             # Load the chat history into redis on connect
-            try:
-                if redis_history is not None:
-                    # Reset and load prior messages
-                    # RedisChatMessageHistory doesn't have a clear() method; we just append.
-                    for item in convo_history:
-                        role = (item.get("role") or "").lower()
-                        content = item.get("content") or item.get("text") or ""
-                        if not content:
-                            continue
-                        if role == "assistant":
-                            redis_history.add_ai_message(content)
-                        else:
-                            redis_history.add_user_message(content)
-            except Exception:
-                pass
+            if convo_history:
+                redis_history.clear()
+                for message in to_lc_messages(convo_history):
+                    redis_history.add_message(message)
 
             # If chat is new, send the first message
-            if not convo_history:
-                first = (
-                    "Hi, I'm Athena. What's on your mind today?"
-                )
-                try:
-                    if redis_history is not None:
-                        redis_history.add_ai_message(first)
-                except Exception:
-                    pass
-                state["assistant"] = first
-                return state
+        if not redis_history.messages or incoming_text == "/start":
+            first = (
+                "Hi, I'm Athena. What's on your mind today?"
+            )
+            if redis_history is not None:
+                redis_history.add_ai_message(first)
+
+            state["assistant"] = first
+            return respond(state)
 
         if state.get("disconnect"):
             logger.info(f"disconnect: {state.get('disconnect')}")
             # Send the full history back (for DRF to persist/confirm)
-            try:
-                if redis_history is not None:
-                    hist_items: List[Dict[str, str]] = []
-                    for m in redis_history.messages:
-                        role = "assistant" if isinstance(m, AIMessage) else "user"
-                        hist_items.append({"role": role, "content": str(m.content)})
-                    state["history_snapshot"] = {"messages": hist_items}
-            except Exception:
-                pass
-            state["assistant"] = ""
-            return state
+            hist_items: List[Dict[str, str]] = []
+            for m in redis_history.messages:
+                role = "assistant" if isinstance(m, AIMessage) else "user"
+                hist_items.append({"role": role, "content": str(m.content)})
+            state["history_snapshot"] = {"messages": hist_items}
+
+            return respond(state)
 
 
         # No-op on empty input: return ack by leaving assistant empty
         if not incoming_text:
             state["assistant"] = ""
-            return state
+            return respond(state)
 
         # Build LC history for context
         lc_history: List[BaseMessage] = []
@@ -144,12 +138,9 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         logger.info(f"content: {out.content}")
         text = (out.content if isinstance(out.content, str) else str(out)).strip()
         state["assistant"] = text
-        try:
-            if redis_history is not None and text:
-                redis_history.add_ai_message(text)
-        except Exception:
-            pass
-        return state
+        redis_history.add_ai_message(text)
+
+        return respond(state)
 
     graph = StateGraph(AgentState)
     graph.add_node("converse", converse)
@@ -164,7 +155,7 @@ REGISTRY.register(
         config=AgentConfig(
             name="Journaling",
             description=(
-                "A lightweight, ephemeral journaling companion that reflects and asks questions."
+                "A lightweight journaling companion that reflects and asks questions."
             ),
             model_name="gpt-5-mini",
             temperature=0.8,

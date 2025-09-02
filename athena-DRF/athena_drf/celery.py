@@ -39,6 +39,9 @@ app.conf.task_routes = {
     "gateway.dispatch_push": {
         "queue": "gateway",
     },
+    "recieved.telegram": {
+        "queue": "gateway",
+    },
 }
 
 # Define exchanges

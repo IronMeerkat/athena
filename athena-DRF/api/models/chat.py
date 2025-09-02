@@ -19,6 +19,8 @@ class Chat(models.Model):
         blank=True,
         related_name="chats",
     )
+    is_telegram = models.BooleanField(default=False)
+    telegram_chat_id = models.BigIntegerField(blank=True, null=True)
     title = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

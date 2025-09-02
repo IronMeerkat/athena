@@ -8,6 +8,10 @@ performed via Celery queues. DRF never imports worker code directly.
 from celery import shared_task
 from typing import Any, Dict
 
+
+from api.integrations.telegram import send_telegram_message
+from api.models import Chat, ChatMessage
+
 from django.conf import settings
 
 from .notifications import send_fcm_message
@@ -63,3 +67,17 @@ def dispatch_push(data: Dict[str, Any]) -> Dict[str, Any]:
         result["sent"].append("browser")
 
     return result
+
+@shared_task(name="recieved.telegram")
+def recieved_telegram(chat_id: str, text: str) -> None:
+    """
+    Recieved a message from Telegram.
+    """
+    print(f"Recieved a message from Telegram: {text} in chat {chat_id}")
+    chat = Chat.objects.get(id=chat_id)
+    chat.messages.create(
+        role=ChatMessage.ROLE_ASSISTANT,
+        content=text,
+    )
+    chat.save(update_fields=["updated_at"])
+    send_telegram_message(chat.telegram_chat_id, text)

@@ -22,3 +22,6 @@ pgvector>=0.2
 # pinecone-client>=3.0
 ## MCP server for tool/agent integration
 mcp>=0.1.0
+## Hot-reload helpers for Celery (filesystem changes)
+watchdog>=3.0
+watchfiles>=0.21

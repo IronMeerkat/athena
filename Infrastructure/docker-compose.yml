@@ -73,7 +73,7 @@ services:
 
   athena-langchain-sensitive:
     build: ../athena-langchain
-    command: ["bash", "-c", "celery -A athena_langchain.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1"]
+    command: ["bash", "-c", "watchfiles --filter python 'celery -A athena_langchain.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1 --pool=solo' /app"]
     volumes:
       - ../athena-langchain:/app
     depends_on:
@@ -95,7 +95,7 @@ services:
 
   athena-drf-worker:
     build: ../athena-DRF
-    command: ["bash", "-c", "celery -A athena_drf.celery worker -Q gateway -n gateway_worker@%h --concurrency=1"]
+    command: ["bash", "-c", "watchfiles --filter python 'celery -A athena_drf.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo' /app"]
     volumes:
       - ../athena-DRF:/app
     depends_on:
@@ -115,7 +115,7 @@ services:
 
   athena-drf:
     build: ../athena-DRF
-    command: ["bash", "-c", "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 athena_drf.asgi:application"]
+    command: ["bash", "-c", "python manage.py makemigrations && python manage.py migrate && watchfiles --filter python 'daphne -b 0.0.0.0 -p 8000 athena_drf.asgi:application' /app"]
     volumes:
       - ../athena-DRF:/app
     ports:

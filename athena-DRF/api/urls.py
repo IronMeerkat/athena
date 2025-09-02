@@ -14,6 +14,7 @@ from rest_framework_simplejwt.views import (
 from django.urls import path
 from . import views
 
+
 urlpatterns = [
     # Health check
     path("ping/", views.PingView.as_view(), name="api-ping"),
@@ -29,6 +30,9 @@ urlpatterns = [
     # Chats API
     path("chats", views.ChatsListView.as_view(), name="api-chats-list"),
     path("chats/<str:chat_id>/messages", views.ChatMessagesView.as_view(), name="api-chat-messages"),
+
+    # Telegram API
+    path("telegram", views.TelegramWebhookView.as_view(), name="api-telegram-basic"),
 
     # JWT auth
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
