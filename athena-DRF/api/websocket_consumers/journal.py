@@ -15,6 +15,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from django.conf import settings
 from celery import current_app as celery_app
 from kombu import Connection, Exchange, Queue
+from channels.db import database_sync_to_async
 
 from .utils import BaseConsumer
 from api.models import Chat, ChatMessage
@@ -42,7 +43,7 @@ class JournalConsumer(BaseConsumer):
         snapshot = data.get("history_snapshot") if isinstance(data, dict) else None
         if snapshot and isinstance(snapshot, dict):
             try:
-                self._persist_history_snapshot(snapshot)
+                await database_sync_to_async(self._persist_history_snapshot)(snapshot)
             except Exception:
                 pass
         await self.send(json.dumps(event))
@@ -50,7 +51,7 @@ class JournalConsumer(BaseConsumer):
     async def connect(self) -> None:
         await super().connect()
         # Load chat history from Postgres and notify agent
-        history = self._load_or_create_history()
+        history = await database_sync_to_async(self._load_or_create_history)()
         await self._start_agent_run({
             "connect": True,
             "convo_history": history,
@@ -81,7 +82,7 @@ class JournalConsumer(BaseConsumer):
             text = (data.get("user_message") or data.get("text") or "").strip()
             if text:
                 try:
-                    self._persist_message(role=ChatMessage.ROLE_USER, content=text)
+                    await database_sync_to_async(self._persist_message)(role=ChatMessage.ROLE_USER, content=text)
                 except Exception:
                     pass
         await super().receive(text_data=text_data, bytes_data=bytes_data)

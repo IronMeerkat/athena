@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from django.conf import settings
 from django.db import models
+
 
 
 class Chat(models.Model):
@@ -13,7 +13,7 @@ class Chat(models.Model):
 
     id = models.CharField(primary_key=True, max_length=64)
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'User',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

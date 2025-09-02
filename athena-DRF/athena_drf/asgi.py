@@ -21,9 +21,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "athena_drf.settings")
 # after setting the DJANGO_SETTINGS_MODULE to ensure Django is properly
 # configured.  Without this, consumers may fail to import database models
 # or other Django modules.
-from api import routing as api_routing  # noqa: E402
-
 django_asgi_app = get_asgi_application()
+
+# Import websocket routing only after Django apps are loaded
+from api import routing as api_routing  # noqa: E402
 
 # The ProtocolTypeRouter determines which consumer should handle each
 # incoming connection based on the protocol.  HTTP requests are passed to
