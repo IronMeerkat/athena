@@ -111,6 +111,7 @@ dependencies {
 
   // Firebase BOM at app level to align transitive Firebase artifacts
   implementation(enforcedPlatform(libs.firebase.bom))
+  implementation(libs.firebase.messaging)
 }
 java {
   toolchain {

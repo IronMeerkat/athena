@@ -19,6 +19,10 @@ import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
 import io.getstream.log.AndroidStreamLogger
 import io.getstream.log.StreamLog
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import com.ironmeerkat.athena.fcm.AthenaFirebaseMessagingService
 
 @HiltAndroidApp
 class AIChatApp : Application() {
@@ -27,5 +31,20 @@ class AIChatApp : Application() {
     super.onCreate()
 
     StreamLog.install(AndroidStreamLogger())
+
+    // Ensure default notification channel exists for FCM notifications.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val manager = getSystemService(NotificationManager::class.java)
+      val channelId = AthenaFirebaseMessagingService.DEFAULT_CHANNEL_ID
+      if (manager.getNotificationChannel(channelId) == null) {
+        val channel = NotificationChannel(
+          channelId,
+          "Athena Notifications",
+          NotificationManager.IMPORTANCE_DEFAULT
+        )
+        channel.description = "General updates from Athena"
+        manager.createNotificationChannel(channel)
+      }
+    }
   }
 }
