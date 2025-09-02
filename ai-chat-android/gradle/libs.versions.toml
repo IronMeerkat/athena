@@ -78,7 +78,7 @@ retrofit-bom = { module = "com.squareup.retrofit2:retrofit-bom", version.ref = "
 retrofit = { module = "com.squareup.retrofit2:retrofit" }
 retrofit-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
-firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 firebase-store = { module = "com.google.firebase:firebase-firestore" }
 firebase-database = { module = "com.google.firebase:firebase-database-ktx", version = "21.0.0" }
 firebase-remote-config = { module = "com.google.firebase:firebase-config" }
