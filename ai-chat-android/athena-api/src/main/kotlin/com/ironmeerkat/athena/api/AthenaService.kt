@@ -2,6 +2,11 @@ package com.ironmeerkat.athena.api
 
 import com.ironmeerkat.athena.api.dto.CreateRunRequest
 import com.ironmeerkat.athena.api.dto.CreateRunResponse
+import com.ironmeerkat.athena.api.dto.TokenObtainPairRequest
+import com.ironmeerkat.athena.api.dto.TokenObtainPairResponse
+import com.ironmeerkat.athena.api.dto.TokenRefreshRequest
+import com.ironmeerkat.athena.api.dto.TokenRefreshResponse
+import com.ironmeerkat.athena.api.dto.TokenVerifyRequest
 import com.ironmeerkat.athena.api.dto.DeviceAttemptRequest
 import com.ironmeerkat.athena.api.dto.DeviceAttemptResponse
 import com.ironmeerkat.athena.api.dto.DevicePermitRequest
@@ -21,6 +26,26 @@ import retrofit2.http.Path
  * [AthenaClient].
  */
 interface AthenaService {
+
+  // ---- Auth (JWT) ----
+
+  /** POST /api/token/ — obtain access and refresh tokens */
+  @POST("api/token/")
+  suspend fun tokenObtainPair(
+    @Body body: TokenObtainPairRequest,
+  ): TokenObtainPairResponse
+
+  /** POST /api/token/refresh/ — get new access token */
+  @POST("api/token/refresh/")
+  suspend fun tokenRefresh(
+    @Body body: TokenRefreshRequest,
+  ): TokenRefreshResponse
+
+  /** POST /api/token/verify/ — verify an existing token */
+  @POST("api/token/verify/")
+  suspend fun tokenVerify(
+    @Body body: TokenVerifyRequest,
+  )
 
   /** POST /api/runs/ — queue a new run on the server. */
   @POST("api/runs/")

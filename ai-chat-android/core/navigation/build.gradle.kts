@@ -28,6 +28,7 @@ android {
 dependencies {
   implementation(projects.core.designsystem)
   api(projects.core.model)
+  implementation(projects.core.logging)
 
   implementation(libs.kotlinx.coroutines.android)
   api(libs.androidx.navigation.compose)

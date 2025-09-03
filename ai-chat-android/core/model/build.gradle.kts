@@ -27,6 +27,7 @@ android {
 dependencies {
   implementation(libs.kotlinx.reflect)
   api(libs.kotlinx.serialization.json)
+  implementation(projects.core.logging)
 
   compileOnly(libs.compose.stable.marker)
 }

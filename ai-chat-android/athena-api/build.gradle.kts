@@ -27,6 +27,10 @@ dependencies {
 
   // coroutines (Flow)
   implementation(libs.kotlinx.coroutines.android)
+
+  // DataStore for local token persistence
+  implementation(libs.kotlinx.datastore.preferences)
+  implementation(projects.core.logging)
 }
 
 secrets {

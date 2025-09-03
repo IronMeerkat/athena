@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.mapLatest
 import java.util.UUID
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import timber.log.Timber
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = MessagesViewModel.Factory::class)
@@ -74,6 +75,10 @@ class MessagesViewModel @AssistedInject constructor(
   private val events: MutableStateFlow<ChatEvent> = MutableStateFlow(ChatEvent.Nothing)
   private val outgoingMessages: MutableSharedFlow<String> = MutableSharedFlow(extraBufferCapacity = 16)
   private val sessionId: String = UUID.randomUUID().toString()
+
+  // Local buffer for messages when channelState is not yet available (new chat flow)
+  private val _localMessages: MutableStateFlow<List<Message>> = MutableStateFlow(emptyList())
+  val localMessages: StateFlow<List<Message>> = _localMessages
   val latestResponse: StateFlow<String?> = athenaClient
     .openJournalingWebSocket(sessionId = sessionId, outgoingMessages = outgoingMessages)
     .stateIn(
@@ -87,6 +92,7 @@ class MessagesViewModel @AssistedInject constructor(
 
   fun handleEvents(messagesEvent: MessagesEvent) {
     this.events.value = messagesEvent
+    Timber.d("handleEvents: %s", messagesEvent)
     when (messagesEvent) {
       is ChatEvent.SendMessage -> sendMessage(
         message = messagesEvent.message,
@@ -95,6 +101,7 @@ class MessagesViewModel @AssistedInject constructor(
         .also {
           // forward the raw text to the websocket
           outgoingMessages.tryEmit(messagesEvent.message)
+          Timber.i("WS outgoing: %s session=%s", messagesEvent.message.take(64), sessionId)
         }
 
       is ChatEvent.CompleteGeneration -> {
@@ -110,12 +117,27 @@ class MessagesViewModel @AssistedInject constructor(
   }
 
   private fun sendMessage(message: String, sender: String) {
-    messagesRepository.sendMessage(
-      index = index,
-      channel = channelState.value!!,
-      message = message,
-      sender = sender,
-    )
+    Timber.d("sendMessage: sender=%s len=%d", sender, message.length)
+    val currentChannel = channelState.value
+    if (currentChannel == null) {
+      // Append locally while server channel is not yet resolved
+      _localMessages.value = _localMessages.value + Message(message = message, sender = sender)
+      Timber.v("buffered local message; size=%d", _localMessages.value.size)
+      return
+    }
+
+    try {
+      messagesRepository.sendMessage(
+        index = index,
+        channel = currentChannel,
+        message = message,
+        sender = sender,
+      )
+      Timber.i("persisted message to channel index=%d", index)
+    } catch (t: Throwable) {
+      // Ensure we never swallow exceptions silently per user rule
+      Timber.e(t, "Failed to persist message index=%d", index)
+    }
   }
 
   @AssistedFactory

@@ -17,6 +17,9 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import okhttp3.MediaType.Companion.toMediaType
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import com.ironmeerkat.athena.api.auth.AuthTokenStore
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -39,20 +42,34 @@ internal object AthenaApiModule {
   /** Adds basic logging for development and a hook for auth headers if needed later. */
   @Provides
   @Singleton
-  fun provideOkHttpClient(): OkHttpClient {
+  fun provideOkHttpClient(
+    tokenStore: AuthTokenStore,
+  ): OkHttpClient {
     val logging = HttpLoggingInterceptor().apply {
       level = HttpLoggingInterceptor.Level.BASIC
     }
     val headers = Interceptor { chain ->
-      val request = chain.request()
-        .newBuilder()
-        // Optionally add JWT: .addHeader("Authorization", "Bearer ${token}")
-        .build()
-      chain.proceed(request)
+      val requestBuilder = chain.request().newBuilder()
+      val token = runBlocking { tokenStore.accessTokenFlow.first() }
+      if (token.isNotBlank()) requestBuilder.addHeader("Authorization", "Bearer $token")
+      chain.proceed(requestBuilder.build())
+    }
+    val authFailure = Interceptor { chain ->
+      val response = chain.proceed(chain.request())
+      if (response.code == 401 || response.code == 403) {
+        try {
+          android.util.Log.w("AthenaApi", "Auth failure ${response.code}; clearing tokens and redirecting to login")
+          runBlocking { tokenStore.clear() }
+        } catch (t: Throwable) {
+          android.util.Log.e("AthenaApi", "Failed to clear tokens after auth failure", t)
+        }
+      }
+      response
     }
     return OkHttpClient.Builder()
       .addInterceptor(logging)
       .addInterceptor(headers)
+      .addInterceptor(authFailure)
       .build()
   }
 

@@ -4,6 +4,35 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
+// ---- Auth (JWT) ----
+
+@Serializable
+data class TokenObtainPairRequest(
+  val username: String,
+  val password: String,
+)
+
+@Serializable
+data class TokenObtainPairResponse(
+  val access: String,
+  val refresh: String,
+)
+
+@Serializable
+data class TokenRefreshRequest(
+  val refresh: String,
+)
+
+@Serializable
+data class TokenRefreshResponse(
+  val access: String,
+)
+
+@Serializable
+data class TokenVerifyRequest(
+  val token: String,
+)
+
 /**
  * Request body for POST /api/runs
  * - agent_id: which agent to run on the Athena side (e.g., "guardian").

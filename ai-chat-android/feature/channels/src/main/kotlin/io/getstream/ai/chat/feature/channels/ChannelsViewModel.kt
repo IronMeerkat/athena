@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
+import timber.log.Timber
 
 @HiltViewModel
 class ChannelsViewModel @Inject constructor(
@@ -44,6 +45,7 @@ class ChannelsViewModel @Inject constructor(
     )
 
   fun handleEvents(channelsEvent: ChannelsEvent) {
+    Timber.d("handleEvents: %s", channelsEvent)
     when (channelsEvent) {
       is ChannelsEvent.CreateChannel -> channelsRepository.addChannel(channels.value)
     }

@@ -27,4 +27,5 @@ android {
 
 dependencies {
   implementation(libs.balloon.compose)
+  implementation(projects.core.logging)
 }

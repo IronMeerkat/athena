@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -31,6 +33,9 @@ import com.ironmeerkat.athena.core.navigation.AIChatScreen
 import com.ironmeerkat.athena.core.navigation.AppComposeNavigator
 import com.ironmeerkat.athena.feature.channels.Channels
 import com.ironmeerkat.athena.feature.messages.Messages
+import com.ironmeerkat.athena.feature.login.Login
+import com.ironmeerkat.athena.AuthGateViewModel
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun AIChatNavHost(
@@ -43,6 +48,14 @@ fun AIChatNavHost(
     composeNavigator.handleNavigationCommands(navController)
   }
 
+  val gate: AuthGateViewModel = hiltViewModel()
+  val loggedIn by gate.isLoggedIn.collectAsState()
+  LaunchedEffect(loggedIn) {
+    if (!loggedIn) {
+      composeNavigator.navigateAndClearBackStack(AIChatScreen.Login)
+    }
+  }
+
   NavHost(
     modifier = modifier
       .fillMaxSize()
@@ -51,6 +64,11 @@ fun AIChatNavHost(
     navController = navController,
     startDestination = startDestination,
   ) {
+    composable<AIChatScreen.Login> {
+      Login(onLoggedIn = {
+        composeNavigator.navigateAndClearBackStack(AIChatScreen.Channels)
+      })
+    }
     composable<AIChatScreen.Channels> {
       Channels { index, channel ->
         composeNavigator.navigate(

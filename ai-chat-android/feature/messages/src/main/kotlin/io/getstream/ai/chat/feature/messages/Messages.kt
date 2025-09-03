@@ -72,6 +72,7 @@ import com.ironmeerkat.athena.core.model.Channel
 import com.ironmeerkat.athena.core.model.Message
 import com.ironmeerkat.athena.core.model.mock.MockUtils
 import java.util.UUID
+import timber.log.Timber
 
 @Composable
 fun Messages(
@@ -86,11 +87,13 @@ fun Messages(
   val messages by messagesViewModel.messages.collectAsStateWithLifecycle()
   val channelState by messagesViewModel.channelState.collectAsStateWithLifecycle()
   val latestResponse by messagesViewModel.latestResponse.collectAsStateWithLifecycle()
+  val localMessages by messagesViewModel.localMessages.collectAsStateWithLifecycle()
   var generatedMessage by remember { mutableStateOf("") }
   val (text, onTextChanged) = remember { mutableStateOf("") }
 
   LaunchedEffect(key1 = latestResponse) {
     latestResponse?.let {
+      Timber.d("WS incoming: %s", it.take(64))
       // Treat each websocket emission as a complete assistant message.
       generatedMessage += it
       if (generatedMessage.isNotBlank()) {
@@ -109,6 +112,7 @@ fun Messages(
 
   LaunchedEffect(key1 = messages, key2 = generatedMessage) {
     if (messages.isNotEmpty()) {
+      Timber.v("scrollToItem index=%d", messages.lastIndex)
       state.scrollToItem(messages.lastIndex)
     }
   }
@@ -116,13 +120,8 @@ fun Messages(
   Column(modifier = Modifier.fillMaxSize()) {
     MessagesAppBar(channel = channel, onBackClick = onBackClick)
 
-    if (channelState != null) {
-      MessageList(messages = messages, state = state, generatedMessage = generatedMessage)
-    } else {
-      Box(modifier = Modifier.fillMaxSize()) {
-        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-      }
-    }
+    val effectiveMessages = if (channelState != null) messages else localMessages
+    MessageList(messages = effectiveMessages, state = state, generatedMessage = generatedMessage)
 
     MessageInput(
       text = text,
@@ -155,7 +154,10 @@ private fun MessagesAppBar(
         .align(Alignment.CenterStart)
         .clip(CircleShape)
         .size(30.dp)
-        .clickable { onBackClick.invoke() },
+        .clickable {
+          Timber.i("Back click")
+          onBackClick.invoke()
+        },
       tint = Color.White,
       imageVector = Icons.AutoMirrored.Default.ArrowBack,
       contentDescription = null,

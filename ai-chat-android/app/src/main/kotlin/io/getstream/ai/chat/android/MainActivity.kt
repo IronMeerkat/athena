@@ -19,6 +19,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import dagger.hilt.android.AndroidEntryPoint
 import com.ironmeerkat.athena.navigation.AIChatNavHost
 import com.ironmeerkat.athena.core.designsystem.theme.AIChatTheme
@@ -41,7 +43,10 @@ class MainActivity : ComponentActivity() {
         LocalComposeNavigator provides composeNavigator,
       ) {
         AIChatTheme {
-          AIChatNavHost(composeNavigator = composeNavigator)
+          val gate: AuthGateViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+          val loggedIn by gate.isLoggedIn.collectAsState()
+          val start = if (loggedIn) AIChatScreen.Channels else AIChatScreen.Login
+          AIChatNavHost(composeNavigator = composeNavigator, startDestination = start)
         }
       }
     }

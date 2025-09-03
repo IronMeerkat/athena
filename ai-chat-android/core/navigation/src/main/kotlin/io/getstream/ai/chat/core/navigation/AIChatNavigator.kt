@@ -18,6 +18,7 @@ package com.ironmeerkat.athena.core.navigation
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.navOptions
 import javax.inject.Inject
+import timber.log.Timber
 
 class AIChatNavigator @Inject constructor() : AppComposeNavigator<AIChatScreen>() {
 
@@ -26,10 +27,12 @@ class AIChatNavigator @Inject constructor() : AppComposeNavigator<AIChatScreen>(
     optionsBuilder: (NavOptionsBuilder.() -> Unit)?,
   ) {
     val options = optionsBuilder?.let { navOptions(it) }
+    Timber.i("navigate: %s", route)
     navigationCommands.tryEmit(ComposeNavigationCommand.NavigateToRoute(route, options))
   }
 
   override fun navigateAndClearBackStack(route: AIChatScreen) {
+    Timber.i("navigateAndClearBackStack: %s", route)
     navigationCommands.tryEmit(
       ComposeNavigationCommand.NavigateToRoute(
         route,
@@ -41,10 +44,12 @@ class AIChatNavigator @Inject constructor() : AppComposeNavigator<AIChatScreen>(
   }
 
   override fun popUpTo(route: AIChatScreen, inclusive: Boolean) {
+    Timber.d("popUpTo: %s inclusive=%s", route, inclusive)
     navigationCommands.tryEmit(ComposeNavigationCommand.PopUpToRoute(route, inclusive))
   }
 
   override fun <R> navigateBackWithResult(key: String, result: R, route: AIChatScreen?) {
+    Timber.d("navigateBackWithResult: key=%s route=%s", key, route)
     navigationCommands.tryEmit(
       ComposeNavigationCommand.NavigateUpWithResult(
         key = key,

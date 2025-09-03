@@ -32,6 +32,7 @@ android {
 dependencies {
   // module
   api(projects.core.model)
+  implementation(projects.core.logging)
 
   // androidx
   implementation(libs.androidx.startup)

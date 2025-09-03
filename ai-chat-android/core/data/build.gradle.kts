@@ -26,4 +26,5 @@ android {
 dependencies {
   api(projects.core.network)
   implementation(projects.athenaApi)
+  implementation(projects.core.logging)
 }

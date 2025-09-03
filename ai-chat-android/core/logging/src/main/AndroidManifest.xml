@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.ironmeerkat.athena.core.logging">
+
+  <application>
+    <meta-data
+      android:name="com.ironmeerkat.athena.core.logging.LoggerInitializer"
+      android:value="androidx.startup" />
+  </application>
+
+</manifest>
+
+

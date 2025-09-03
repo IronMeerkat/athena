@@ -56,6 +56,7 @@ import com.ironmeerkat.athena.core.designsystem.theme.AIChatPreview
 import com.ironmeerkat.athena.core.designsystem.theme.AIChatTheme
 import com.ironmeerkat.athena.core.model.Channel
 import com.ironmeerkat.athena.core.model.mock.MockUtils
+import timber.log.Timber
 
 @Composable
 fun Channels(
@@ -63,6 +64,9 @@ fun Channels(
   navigateToMessages: (Int, Channel) -> Unit,
 ) {
   val channels by channelsViewModel.channels.collectAsStateWithLifecycle()
+  LaunchedEffect(channels.size) {
+    Timber.i("Channels: list size=%d", channels.size)
+  }
 
   Box(
     modifier = Modifier
@@ -74,13 +78,20 @@ fun Channels(
 
       ChannelContentBody(
         channels = channels,
-        onChannelClick = { index, channel -> navigateToMessages.invoke(index, channel) },
+        onChannelClick = { index, channel ->
+          Timber.i("ChannelClick: index=%d id=%s", index, channel.id)
+          navigateToMessages.invoke(index, channel)
+        },
       )
     }
 
     ChannelFloatingButton(
       channelSize = channels.size,
       channelsViewModel = channelsViewModel,
+      onNewChannel = { index, channel ->
+        Timber.i("NewChannel: index=%d id=%s", index, channel.id)
+        navigateToMessages.invoke(index, channel)
+      },
     )
   }
 }
@@ -175,6 +186,7 @@ private fun ChannelItem(
 private fun BoxScope.ChannelFloatingButton(
   channelSize: Int,
   channelsViewModel: ChannelsViewModel,
+  onNewChannel: (Int, Channel) -> Unit,
 ) {
   val shouldDisplayBalloon = channelSize == 0
 
@@ -204,7 +216,12 @@ private fun BoxScope.ChannelFloatingButton(
     }
 
     FloatingActionButton(
-      onClick = { channelsViewModel.handleEvents(ChannelsEvent.CreateChannel) },
+      onClick = {
+        channelsViewModel.handleEvents(ChannelsEvent.CreateChannel)
+        // Create a local channel and navigate immediately to start chatting
+        val newChannel = Channel(messages = emptyList())
+        onNewChannel(channelSize, newChannel)
+      },
     ) {
       Icon(
         imageVector = Icons.Default.Add,

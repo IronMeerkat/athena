@@ -32,6 +32,10 @@ sealed interface AIChatScreen {
 
   @Immutable
   @Serializable
+  data object Login : AIChatScreen
+
+  @Immutable
+  @Serializable
   data class Messages(val index: Int, val channel: Channel) : AIChatScreen {
 
     companion object {

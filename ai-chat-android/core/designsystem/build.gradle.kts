@@ -26,6 +26,7 @@ android {
 dependencies {
   // modules
   implementation(projects.core.model)
+  implementation(projects.core.logging)
 
   // image loading
   api(libs.landscapist.glide)

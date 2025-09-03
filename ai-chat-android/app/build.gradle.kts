@@ -73,10 +73,18 @@ dependencies {
   // Features
   implementation(projects.feature.channels)
   implementation(projects.feature.messages)
+  implementation(projects.feature.login)
+
+  // Digital Wellbeing module (accessibility service, policy engine)
+  implementation(projects.digitalWellbeing)
+
+  // Athena API (Auth + Retrofit/OkHttp)
+  implementation(projects.athenaApi)
 
   // Compose
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.navigation.compose)
+  implementation(libs.androidx.hilt.navigation.compose)
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.compose.runtime)
@@ -104,6 +112,7 @@ dependencies {
 
   // Logger
   implementation(libs.stream.log)
+  implementation(projects.core.logging)
 
   // Baseline Profiles
   implementation(libs.androidx.profileinstaller)
