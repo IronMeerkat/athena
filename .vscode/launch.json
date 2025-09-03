@@ -1,0 +1,72 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Attach: DRF (daphne)",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "/home/ironmeerkat/athena-DRF",
+                    "remoteRoot": "/app"
+                }
+            ],
+            "justMyCode": false,
+            "postDebugTask": "compose: down (debug)"
+        },
+        {
+            "name": "Attach: DRF Worker (celery)",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5679
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "/home/ironmeerkat/athena-DRF",
+                    "remoteRoot": "/app"
+                }
+            ],
+            "justMyCode": false,
+            "postDebugTask": "compose: down (debug)"
+        },
+        {
+            "name": "Attach: LangChain Worker (celery)",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5680
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "/home/ironmeerkat/athena-langchain",
+                    "remoteRoot": "/app"
+                }
+            ],
+            "justMyCode": false,
+            "postDebugTask": "compose: down (debug)"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Attach: All (DRF + Worker + LangChain)",
+            "configurations": [
+                "Attach: DRF (daphne)",
+                "Attach: DRF Worker (celery)",
+                "Attach: LangChain Worker (celery)"
+            ],
+            "preLaunchTask": "Start: Athena debug stack",
+            "stopAll": true
+        }
+    ]
+}

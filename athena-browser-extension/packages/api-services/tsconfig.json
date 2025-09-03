@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig/module.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "noEmit": false,
+    "declaration": true,
+    "types": []
+  },
+  "include": ["index.mts", "lib"]
+}
+

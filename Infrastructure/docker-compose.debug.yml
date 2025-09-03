@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  athena-drf:
+    command: ["bash", "-c", "pip install -q debugpy && python manage.py makemigrations && python manage.py migrate && watchfiles --filter python 'python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m daphne -b 0.0.0.0 -p 8000 athena_drf.asgi:application' /app"]
+    ports:
+      - "5678:5678"
+
+  athena-drf-worker:
+    command: ["bash", "-c", "pip install -q debugpy && watchfiles --filter python 'python -m debugpy --listen 0.0.0.0:5679 --wait-for-client -m celery -A athena_drf.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo' /app"]
+    ports:
+      - "5679:5679"
+
+  athena-langchain-sensitive:
+    command: ["bash", "-c", "pip install -q debugpy && watchfiles --filter python 'python -m debugpy --listen 0.0.0.0:5680 --wait-for-client -m celery -A athena_langchain.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1 --pool=solo' /app"]
+    ports:
+      - "5680:5680"
+
+
