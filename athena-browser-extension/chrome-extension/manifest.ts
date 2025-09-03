@@ -21,7 +21,7 @@ const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
 const manifest = {
   manifest_version: 3,
   default_locale: 'en',
-  name: '__MSG_extensionName__',
+  name: 'Athena',
   browser_specific_settings: {
     gecko: {
       id: 'example@example.com',
@@ -29,7 +29,7 @@ const manifest = {
     },
   },
   version: packageJson.version,
-  description: '__MSG_extensionDescription__',
+  description: 'Athena browser extension',
   host_permissions: ['<all_urls>'],
   permissions: [
     'storage',

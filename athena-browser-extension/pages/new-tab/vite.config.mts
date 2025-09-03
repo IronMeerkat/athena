@@ -14,4 +14,5 @@ export default withPageConfig({
   build: {
     outDir: resolve(rootDir, '..', '..', 'dist', 'new-tab'),
   },
+  assetsInclude: ['**/athena/**'],
 });

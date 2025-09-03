@@ -1,6 +1,6 @@
 import 'webextension-polyfill';
 import { exampleThemeStorage } from '@extension/storage';
-import { isDistraction, evaluateAppeal, type AppealTurn } from '../services/openai';
+import { isDistraction, evaluateAppeal, type AppealTurn } from '../services/athena';
 import { getRegistry, handleMessage } from './orchestrator';
 import { EchoAgent, SummarizeTitleAgent } from './agents';
 import {
