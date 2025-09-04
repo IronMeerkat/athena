@@ -1,4 +1,4 @@
-const BASE_URL = (process.env.ATHENA_DRF_URL || 'http://localhost:8000') + '/api';
+const BASE_URL = (process.env.ATHENA_DRF_URL || 'http://192.168.0.248:8000') + '/api';
 
 export const isDistraction = async (title: string): Promise<boolean> => {
   try {
