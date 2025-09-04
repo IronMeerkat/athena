@@ -1,7 +1,7 @@
 {
-  "name": "@extension/api-services",
-  "version": "0.5.0",
-  "description": "Shared API services for Athena extension (HTTP, WS, SSO, auth store)",
+  "name": "@extension/types",
+  "version": "0.1.0",
+  "description": "Shared type definitions for Athena extension",
   "type": "module",
   "private": true,
   "sideEffects": false,
@@ -22,14 +22,10 @@
     "type-check": "tsc --noEmit",
     "postinstall": "pnpm ready"
   },
-  "dependencies": {
-    "axios": "^1.7.7"
-  },
   "devDependencies": {
-    "@extension/types": "workspace:*",
     "@extension/tsconfig": "workspace:*",
-    "@types/chrome": "^0.0.272",
     "@types/node": "^22.7.4"
   }
 }
+
 

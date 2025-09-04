@@ -1,5 +1,5 @@
 import { create } from '../vendor/zustand.js';
-import type { AuthState } from '../types.js';
+import type { AuthState } from '@extension/types';
 
 type Store = AuthState & {
   setTokens: (accessToken: string | null, refreshToken?: string | null) => Promise<void>;

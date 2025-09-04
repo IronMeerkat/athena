@@ -52,21 +52,14 @@ setInterval(() => captureIfUrlChanged(0), 1000);
 captureDOM();
 
 // Listen for background requests to recapture and re-evaluate
-try {
-  chrome.runtime.onMessage.addListener((message: unknown) => {
-    if (
-      typeof message === 'object' &&
-      message !== null &&
-      'type' in message &&
-      (message as { type?: unknown }).type === 'REQUEST_DOM_CAPTURE'
-    ) {
-      try {
-        captureDOM();
-      } catch {
-        // ignore
-      }
-    }
-  });
-} catch {
-  // ignore
-}
+
+chrome.runtime.onMessage.addListener((message: unknown) => {
+  if (
+    typeof message === 'object' &&
+    message !== null &&
+    'type' in message &&
+    (message as { type?: unknown }).type === 'REQUEST_DOM_CAPTURE'
+  ) {
+    captureDOM();
+  }
+});

@@ -1,4 +1,4 @@
-import type { WebSocketMessage } from '../types.js';
+import type { WebSocketMessage } from '@extension/types';
 import { AuthRequiredError } from '../http/errors.js';
 import { authStore } from '../auth/store.js';
 

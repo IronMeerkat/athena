@@ -1,5 +1,5 @@
 import { createHttpClient } from '../http/client.js';
-import type { LoginCredentials, LoginResult } from '../types.js';
+import type { LoginCredentials, LoginResult } from '@extension/types';
 import { authStore } from './store.js';
 import { ssoEvents } from '../sso/events.js';
 
@@ -59,7 +59,9 @@ export const createLoginService = (options: LoginServiceOptions) => {
 
   const logout = async (): Promise<void> => {
     try {
-      await http.post(endpoints.logout);
+      if (endpoints.logout) {
+        await http.post(endpoints.logout);
+      }
     } catch (e) {
       console.error('Logout request failed', e);
     }

@@ -1,4 +1,4 @@
-export * from './types.js';
+export type * from '@extension/types';
 export * from './sso/events.js';
 export * from './sso/const.js';
 export * from './ws/client.js';

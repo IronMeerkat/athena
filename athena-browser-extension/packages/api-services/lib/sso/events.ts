@@ -1,5 +1,5 @@
 import { SSO_BROADCAST_CHANNEL } from './const.js';
-import type { SsoEventType, Unsubscribe } from '../types.js';
+import type { SsoEventType, Unsubscribe } from '@extension/types';
 
 type Listener = (event: SsoEventType) => void;
 
