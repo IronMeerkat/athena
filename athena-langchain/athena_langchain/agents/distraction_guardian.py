@@ -8,6 +8,7 @@ from langgraph.graph import END, StateGraph
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 
+from athena_langchain.celery import app as celery_app
 from athena_langchain.config import Settings
 from athena_langchain.tools.policies.schedule import (
     get_current_strictness,
@@ -83,6 +84,14 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         ),
     ])
 
+    def respond(state: GuardianState) -> GuardianState:
+        celery_app.send_task(
+            "gateway.dispatch_push",
+            args=[state],
+            queue="gateway",
+            )
+        return state
+
     def assemble(state: GuardianState) -> GuardianState:
         # Derive URL parts and Android hints
         url_value = state.get("url", "") or ""
@@ -99,7 +108,7 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         sid: Optional[str] = state.get("session_id")
         state["strictness"] = get_current_strictness(settings, session_id=sid)
         state["goal"] = get_current_goal(settings, session_id=sid)
-        return state
+        return respond(state)
 
     def classify(state: GuardianState) -> GuardianState:
         chain = classify_prompt | llm
@@ -135,7 +144,7 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
                     label = c  # type: ignore[assignment]
                     break
         state["classification"] = label
-        return state
+        return respond(state)
 
     def decide(state: GuardianState) -> GuardianState:
         strict = int(state.get("strictness", 5))
@@ -148,7 +157,7 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
 
         if label == "work":
             state["decision"] = "allow"
-            return state
+            return respond(state)
 
         if label == "neutral":
             if strict <= 3:
@@ -160,7 +169,7 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
             else:
                 state["decision"] = "block"
                 state["appeal_available"] = True
-            return state
+            return respond(state)
 
         # distraction / unhealthy_habit
         if strict <= 2:
@@ -176,7 +185,7 @@ def build_graph(settings: Settings, llm: BaseChatModel) -> StateGraph:
         else:
             state["decision"] = "block"
             state["appeal_available"] = False
-        return state
+        return respond(state)
 
     def project(state: GuardianState) -> GuardianState:
         logger.info(f"Projecting state: {state}")
