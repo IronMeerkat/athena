@@ -2,6 +2,7 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "python.languageServer": "None",
     "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable",
+    "java.compile.nullAnalysis.mode": "automatic",
     "workbench.colorCustomizations": {
         "activityBar.background": "#063525",
         "titleBar.activeBackground": "#094A34",

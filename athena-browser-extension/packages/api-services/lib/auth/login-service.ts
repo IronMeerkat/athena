@@ -16,10 +16,10 @@ export type LoginServiceOptions = {
 export const createLoginService = (options: LoginServiceOptions) => {
   const http = createHttpClient({ baseURL: options.baseURL });
   const endpoints = {
-    login: '/api/auth/login/',
-    me: '/api/auth/me/',
-    refresh: '/api/auth/refresh/',
-    logout: '/api/auth/logout/',
+    login: 'token',
+    me: 'token/verify/',
+    refresh: 'token/refresh/',
+    logout: null, // DRF is agnostic, simply abandon the token to logout
     ...(options.endpoints ?? {}),
   };
 
