@@ -19,10 +19,10 @@ import {
   HTMLPreview,
   HTMLPreviewHandler,
 } from "./artifacts";
-import { useChatStore } from "../store";
+import { useChatStore, useAppConfig } from "../store";
 import { IconButton } from "./button";
 
-import { useAppConfig } from "../store/config";
+// useAppConfig comes from ../store shim
 import clsx from "clsx";
 
 export function Mermaid(props: { code: string }) {
@@ -41,7 +41,6 @@ export function Mermaid(props: { code: string }) {
           console.error("[Mermaid] ", e.message);
         });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.code]);
 
   function viewSvgInNewWindow() {
@@ -71,7 +70,7 @@ export function Mermaid(props: { code: string }) {
   );
 }
 
-export function PreCode(props: { children: any }) {
+export function PreCode(props: { children?: any }) {
   const ref = useRef<HTMLPreElement>(null);
   const previewRef = useRef<HTMLPreviewHandler>(null);
   const [mermaidCode, setMermaidCode] = useState("");
@@ -100,8 +99,7 @@ export function PreCode(props: { children: any }) {
   }, 600);
 
   const config = useAppConfig();
-  const enableArtifacts =
-    session.mask?.enableArtifacts !== false && config.enableArtifacts;
+  const enableArtifacts = !!config.enableArtifacts;
 
   //Wrap the paragraph for plain-text
   useEffect(() => {
@@ -173,12 +171,11 @@ export function PreCode(props: { children: any }) {
   );
 }
 
-function CustomCode(props: { children: any; className?: string }) {
+function CustomCode(props: { children?: any; className?: string }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   const config = useAppConfig();
-  const enableCodeFold =
-    session.mask?.enableCodeFold !== false && config.enableCodeFold;
+  const enableCodeFold = !!config.enableCodeFold;
 
   const ref = useRef<HTMLPreElement>(null);
   const [collapsed, setCollapsed] = useState(true);

@@ -24,8 +24,11 @@ import Locale, { getLang } from "../locales";
 import { prettyObject } from "../utils/format";
 import { createPersistStore } from "../utils/store";
 import { estimateTokenLength } from "../utils/token";
-import { ModelConfig, ModelType, useAppConfig } from "./config";
+import { useAppConfig } from "../store";
+import { ChatControllerPool } from "../client/controller";
+import { isMcpEnabled } from "../mcp/actions";
 import { collectModelsWithDefaultModel } from "../utils/model";
+import { nanoid } from "nanoid";
 
 const localStorage = safeLocalStorage();
 
@@ -52,6 +55,59 @@ export type ChatMessage = RequestMessage & {
   audio_url?: string;
   isMcpResponse?: boolean;
 };
+
+// Minimal shared types to avoid mask usage
+type Role = "user" | "assistant" | "system";
+export type ModelType = string;
+export type MultimodalContent =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+export interface RequestMessage {
+  role: Role;
+  content: string | MultimodalContent[];
+}
+export interface ModelConfig {
+  model: string;
+  max_tokens: number;
+  enableInjectSystemPrompts: boolean;
+  template?: string;
+  historyMessageCount: number;
+  compressMessageLengthThreshold: number;
+  sendMemory: boolean;
+  compressModel?: string;
+  compressProviderName?: string;
+  providerName?: string;
+}
+
+// minimal client api stub for Athena new-tab
+type ChatResponse = { status: number };
+type ChatController = { abort: () => void };
+type ChatCallArgs = {
+  messages: RequestMessage[];
+  config: ModelConfig & { stream?: boolean; providerName?: string };
+  onUpdate?: (message: string) => void;
+  onFinish?: (message: string, responseRes?: ChatResponse) => void;
+  onBeforeTool?: (tool: ChatMessageTool) => void;
+  onAfterTool?: (tool: ChatMessageTool) => void;
+  onError?: (error: Error) => void;
+  onController?: (controller: ChatController) => void;
+};
+type ClientApi = { llm: { chat: (args: ChatCallArgs) => void } };
+function getClientApi(_providerName?: string): ClientApi {
+  return {
+    llm: {
+      chat: ({ messages, onUpdate, onFinish, onController }) => {
+        const controller: ChatController = { abort: () => {} };
+        onController?.(controller);
+        const last = messages[messages.length - 1];
+        const text = typeof last.content === "string" ? last.content : "";
+        const reply = text ? `Echo: ${text}` : "";
+        if (reply) onUpdate?.(reply);
+        onFinish?.(reply, { status: 200 });
+      },
+    },
+  };
+}
 
 export function createMessage(override: Partial<ChatMessage>): ChatMessage {
   return {
@@ -166,24 +222,8 @@ function fillTemplateWith(input: string, modelConfig: ModelConfig) {
 }
 
 async function getMcpSystemPrompt(): Promise<string> {
-  const tools = await getAllTools();
-
-  let toolsStr = "";
-
-  tools.forEach((i) => {
-    // error client has no tools
-    if (!i.tools) return;
-
-    toolsStr += MCP_TOOLS_TEMPLATE.replace(
-      "{{ clientId }}",
-      i.clientId,
-    ).replace(
-      "{{ tools }}",
-      i.tools.tools.map((p: object) => JSON.stringify(p, null, 2)).join("\n"),
-    );
-  });
-
-  return MCP_SYSTEM_TEMPLATE.replace("{{ MCP_TOOLS }}", toolsStr);
+  // MCP disabled in Athena new-tab by default
+  return "";
 }
 
 const DEFAULT_CHAT_STATE = {
@@ -216,12 +256,6 @@ export const useChatStore = createPersistStore(
           ...msg,
           id: nanoid(), // 生成新的消息 ID
         }));
-        newSession.mask = {
-          ...currentSession.mask,
-          modelConfig: {
-            ...currentSession.mask.modelConfig,
-          },
-        };
 
         set((state) => ({
           currentSessionIndex: 0,
@@ -267,22 +301,8 @@ export const useChatStore = createPersistStore(
         });
       },
 
-      newSession(mask?: Mask) {
+      newSession() {
         const session = createEmptySession();
-
-        if (mask) {
-          const config = useAppConfig.getState();
-          const globalModelConfig = config.modelConfig;
-
-          session.mask = {
-            ...mask,
-            modelConfig: {
-              ...globalModelConfig,
-              ...mask.modelConfig,
-            },
-          };
-          session.topic = mask.name;
-        }
 
         set((state) => ({
           currentSessionIndex: 0,
@@ -373,7 +393,7 @@ export const useChatStore = createPersistStore(
         isMcpResponse?: boolean,
       ) {
         const session = get().currentSession();
-        const modelConfig = session.mask.modelConfig;
+        const modelConfig = useAppConfig.getState().modelConfig as ModelConfig;
 
         // MCP Response no need to fill template
         let mContent: string | MultimodalContent[] = isMcpResponse
@@ -424,7 +444,7 @@ export const useChatStore = createPersistStore(
         api.llm.chat({
           messages: sendMessages,
           config: { ...modelConfig, stream: true },
-          onUpdate(message) {
+          onUpdate(message: string) {
             botMessage.streaming = true;
             if (message) {
               botMessage.content = message;
@@ -433,7 +453,7 @@ export const useChatStore = createPersistStore(
               session.messages = session.messages.concat();
             });
           },
-          async onFinish(message) {
+          async onFinish(message: string) {
             botMessage.streaming = false;
             if (message) {
               botMessage.content = message;
@@ -458,7 +478,7 @@ export const useChatStore = createPersistStore(
               session.messages = session.messages.concat();
             });
           },
-          onError(error) {
+          onError(error: Error) {
             const isAborted = error.message?.includes?.("aborted");
             botMessage.content +=
               "\n\n" +
@@ -479,7 +499,7 @@ export const useChatStore = createPersistStore(
 
             console.error("[Chat] failed ", error);
           },
-          onController(controller) {
+          onController(controller: { abort: () => void }) {
             // collect controller for stop/retry
             ChatControllerPool.addController(
               session.id,
@@ -500,23 +520,24 @@ export const useChatStore = createPersistStore(
             date: "",
           } as ChatMessage;
         }
+        return undefined;
       },
 
       async getMessagesWithMemory() {
         const session = get().currentSession();
-        const modelConfig = session.mask.modelConfig;
+        const modelConfig = useAppConfig.getState().modelConfig as ModelConfig;
         const clearContextIndex = session.clearContextIndex ?? 0;
         const messages = session.messages.slice();
         const totalMessageCount = session.messages.length;
 
         // in-context prompts
-        const contextPrompts = session.mask.context.slice();
+        const contextPrompts: ChatMessage[] = [];
 
         // system prompts, to get close to OpenAI Web ChatGPT
         const shouldInjectSystemPrompts =
           modelConfig.enableInjectSystemPrompts &&
-          (session.mask.modelConfig.model.startsWith("gpt-") ||
-            session.mask.modelConfig.model.startsWith("chatgpt-"));
+          (modelConfig.model.startsWith("gpt-") ||
+            modelConfig.model.startsWith("chatgpt-"));
 
         const mcpEnabled = await isMcpEnabled();
         const mcpSystemPrompt = mcpEnabled ? await getMcpSystemPrompt() : "";
@@ -627,7 +648,7 @@ export const useChatStore = createPersistStore(
       ) {
         const config = useAppConfig.getState();
         const session = targetSession;
-        const modelConfig = session.mask.modelConfig;
+        const modelConfig = config.modelConfig as ModelConfig;
         // skip summarize when using dalle3?
         if (isDalle3(modelConfig.model)) {
           return;
@@ -637,10 +658,10 @@ export const useChatStore = createPersistStore(
         const [model, providerName] = modelConfig.compressModel
           ? [modelConfig.compressModel, modelConfig.compressProviderName]
           : getSummarizeModel(
-              session.mask.modelConfig.model,
-              session.mask.modelConfig.providerName,
+              modelConfig.model,
+              modelConfig.providerName ?? "Athena",
             );
-        const api: ClientApi = getClientApi(providerName as ServiceProvider);
+        const api: ClientApi = getClientApi(providerName as string);
 
         // remove error messages if any
         const messages = session.messages;
@@ -670,12 +691,8 @@ export const useChatStore = createPersistStore(
             );
           api.llm.chat({
             messages: topicMessages,
-            config: {
-              model,
-              stream: false,
-              providerName,
-            },
-            onFinish(message, responseRes) {
+            config: { ...(config.modelConfig as ModelConfig), model, stream: false, providerName },
+            onFinish(message: string, responseRes?: { status: number }) {
               if (responseRes?.status === 200) {
                 get().updateTargetSession(
                   session,
@@ -734,16 +751,11 @@ export const useChatStore = createPersistStore(
                 date: "",
               }),
             ),
-            config: {
-              ...modelcfg,
-              stream: true,
-              model,
-              providerName,
-            },
-            onUpdate(message) {
+            config: { ...(config.modelConfig as ModelConfig), ...modelcfg, stream: true, model, providerName },
+            onUpdate(message: string) {
               session.memoryPrompt = message;
             },
-            onFinish(message, responseRes) {
+            onFinish(message: string, responseRes?: { status: number }) {
               if (responseRes?.status === 200) {
                 console.log("[Memory] ", message);
                 get().updateTargetSession(session, (session) => {
@@ -752,7 +764,7 @@ export const useChatStore = createPersistStore(
                 });
               }
             },
-            onError(err) {
+            onError(err: Error) {
               console.error("[Summarize] ", err);
             },
           });
@@ -786,37 +798,8 @@ export const useChatStore = createPersistStore(
         });
       },
 
-      /** check if the message contains MCP JSON and execute the MCP action */
-      checkMcpJson(message: ChatMessage) {
-        const mcpEnabled = isMcpEnabled();
-        if (!mcpEnabled) return;
-        const content = getMessageTextContent(message);
-        if (isMcpJson(content)) {
-          try {
-            const mcpRequest = extractMcpJson(content);
-            if (mcpRequest) {
-              console.debug("[MCP Request]", mcpRequest);
-
-              executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
-                .then((result) => {
-                  console.log("[MCP Response]", result);
-                  const mcpResponse =
-                    typeof result === "object"
-                      ? JSON.stringify(result)
-                      : String(result);
-                  get().onUserInput(
-                    `\`\`\`json:mcp-response:${mcpRequest.clientId}\n${mcpResponse}\n\`\`\``,
-                    [],
-                    true,
-                  );
-                })
-                .catch((error) => showToast("MCP execution failed", error));
-            }
-          } catch (error) {
-            console.error("[Check MCP JSON]", error);
-          }
-        }
-      },
+      /** MCP disabled in Athena new-tab: no-op */
+      checkMcpJson(_message: ChatMessage) {},
     };
 
     return methods;
@@ -838,9 +821,6 @@ export const useChatStore = createPersistStore(
           const newSession = createEmptySession();
           newSession.topic = oldSession.topic;
           newSession.messages = [...oldSession.messages];
-          newSession.mask.modelConfig.sendMemory = true;
-          newSession.mask.modelConfig.historyMessageCount = 4;
-          newSession.mask.modelConfig.compressMessageLengthThreshold = 1000;
           newState.sessions.push(newSession);
         }
       }
@@ -856,36 +836,16 @@ export const useChatStore = createPersistStore(
       // Enable `enableInjectSystemPrompts` attribute for old sessions.
       // Resolve issue of old sessions not automatically enabling.
       if (version < 3.1) {
-        newState.sessions.forEach((s) => {
-          if (
-            // Exclude those already set by user
-            !s.mask.modelConfig.hasOwnProperty("enableInjectSystemPrompts")
-          ) {
-            // Because users may have changed this configuration,
-            // the user's current configuration is used instead of the default
-            const config = useAppConfig.getState();
-            s.mask.modelConfig.enableInjectSystemPrompts =
-              config.modelConfig.enableInjectSystemPrompts;
-          }
-        });
+        // no-op: mask removed
       }
 
       // add default summarize model for every session
       if (version < 3.2) {
-        newState.sessions.forEach((s) => {
-          const config = useAppConfig.getState();
-          s.mask.modelConfig.compressModel = config.modelConfig.compressModel;
-          s.mask.modelConfig.compressProviderName =
-            config.modelConfig.compressProviderName;
-        });
+        // no-op: mask removed
       }
       // revert default summarize model for every session
       if (version < 3.3) {
-        newState.sessions.forEach((s) => {
-          const config = useAppConfig.getState();
-          s.mask.modelConfig.compressModel = "";
-          s.mask.modelConfig.compressProviderName = "";
-        });
+        // no-op: mask removed
       }
 
       return newState as any;

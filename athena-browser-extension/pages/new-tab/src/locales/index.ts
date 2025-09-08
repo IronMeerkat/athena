@@ -1,5 +1,5 @@
 import en from "./en";
-export type LocaleType = typeof en;
+export type { LocaleType } from "../types/locales";
 export const AllLangs = ["en"] as const;
 export const ALL_LANG_OPTIONS = { en: "English" } as const;
 export function changeLang(_l: string) {}

@@ -9,6 +9,7 @@ declare module "*.scss" {
 }
 
 declare module "*.svg";
+declare module "*.svg?react";
 /// <reference path="./types/react-router-dom.d.ts" />
 /// <reference path="./types/clsx.d.ts" />
 /// <reference path="./types/html-to-image.d.ts" />

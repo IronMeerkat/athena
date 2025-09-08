@@ -8,7 +8,6 @@ import Locale from "@/app/locales";
 import { Path, REPO_URL } from "@/app/constant";
 
 import { useNavigate } from "react-router-dom";
-// Removed next/dynamic
 import {
   SideBarContainer,
   SideBarBody,
@@ -23,12 +22,7 @@ import { useSdStore } from "@/app/store/sd";
 import { showToast } from "@/app/components/ui-lib";
 import { useMobileScreen } from "@/app/utils";
 
-const SdPanel = dynamic(
-  async () => (await import("@/app/components/sd")).SdPanel,
-  {
-    loading: () => null,
-  },
-);
+import { SdPanel } from "@/app/components/sd";
 
 export function SideBar(props: { className?: string }) {
   useHotKey();
@@ -79,7 +73,7 @@ export function SideBar(props: { className?: string }) {
           data-tauri-drag-region
           style={{
             paddingLeft: 0,
-            paddingRight: 0,
+            paddingRight: 0
           }}
         >
           <div className="window-actions">

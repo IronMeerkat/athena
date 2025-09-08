@@ -23,6 +23,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.ironmeerkat.athena.fcm.AthenaFirebaseMessagingService
+import androidx.core.content.ContextCompat
+import android.content.Intent
+import com.ironmeerkat.athena.digitalwellbeing.service.AppMonitorForegroundService
 
 @HiltAndroidApp
 class AIChatApp : Application() {
@@ -45,6 +48,15 @@ class AIChatApp : Application() {
         channel.description = "General updates from Athena"
         manager.createNotificationChannel(channel)
       }
+    }
+
+    // Start monitoring foreground service so activity is monitored even when app UI is not open
+    try {
+      val intent = Intent(this, AppMonitorForegroundService::class.java)
+      ContextCompat.startForegroundService(this, intent)
+    } catch (t: Throwable) {
+      // Never swallow silently; always log
+      StreamLog.getLogger("AIChatApp").e(t) { "Failed to start AppMonitorForegroundService at app start" }
     }
   }
 }

@@ -64,12 +64,13 @@ export function useDragSideBar() {
 
   const config = useAppConfig();
   const startX = useRef(0);
-  const startDragWidth = useRef(config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH);
+  const startDragWidth = useRef<number>((config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH) as number);
   const lastUpdateTime = useRef(Date.now());
 
   const toggleSideBar = () => {
+    const sidebarWidth = (config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH) as number;
     config.update((config) => {
-      if (config.sidebarWidth < MIN_SIDEBAR_WIDTH) {
+      if (sidebarWidth < MIN_SIDEBAR_WIDTH) {
         config.sidebarWidth = DEFAULT_SIDEBAR_WIDTH;
       } else {
         config.sidebarWidth = NARROW_SIDEBAR_WIDTH;
@@ -80,7 +81,7 @@ export function useDragSideBar() {
   const onDragStart = (e: MouseEvent) => {
     // Remembers the initial width each time the mouse is pressed
     startX.current = e.clientX;
-    startDragWidth.current = config.sidebarWidth;
+    startDragWidth.current = (config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH) as number;
     const dragStartTime = Date.now();
 
     const handleDragMove = (e: MouseEvent) => {
@@ -89,7 +90,7 @@ export function useDragSideBar() {
       }
       lastUpdateTime.current = Date.now();
       const d = e.clientX - startX.current;
-      const nextWidth = limit(startDragWidth.current + d);
+      const nextWidth = limit(((startDragWidth.current ?? DEFAULT_SIDEBAR_WIDTH) as number) + d);
       config.update((config) => {
         if (nextWidth < MIN_SIDEBAR_WIDTH) {
           config.sidebarWidth = NARROW_SIDEBAR_WIDTH;
@@ -116,13 +117,13 @@ export function useDragSideBar() {
   };
 
   const isMobileScreen = useMobileScreen();
-  const shouldNarrow =
-    !isMobileScreen && config.sidebarWidth < MIN_SIDEBAR_WIDTH;
+  const sidebarWidth = (config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH) as number;
+  const shouldNarrow = !isMobileScreen && sidebarWidth < MIN_SIDEBAR_WIDTH;
 
   useEffect(() => {
     const barWidth = shouldNarrow
       ? NARROW_SIDEBAR_WIDTH
-      : limit(config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH);
+      : limit(((config.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH) as number));
     const sideBarWidth = isMobileScreen ? "100vw" : `${barWidth}px`;
     document.documentElement.style.setProperty("--sidebar-width", sideBarWidth);
   }, [config.sidebarWidth, isMobileScreen, shouldNarrow]);
@@ -270,6 +271,7 @@ export function SideBar(props: { className?: string }) {
             text={shouldNarrow ? undefined : Locale.Discovery.Name}
             className={styles["sidebar-bar-button"]}
             onClick={() => setshowDiscoverySelector(true)}
+            disabled
             shadow
           />
         </div>

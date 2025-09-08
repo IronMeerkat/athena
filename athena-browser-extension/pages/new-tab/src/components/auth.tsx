@@ -14,10 +14,7 @@ import { getClientConfig } from "../config/client";
 import { PasswordInput } from "./ui-lib";
 import LeftIcon from "@/app/icons/left.svg";
 import { safeLocalStorage } from "@/app/utils";
-import {
-  trackSettingsPageGuideToCPaymentClick,
-  trackAuthorizationPageButtonToCPaymentClick,
-} from "../utils/auth-settings-events";
+
 import clsx from "clsx";
 
 const storage = safeLocalStorage();
@@ -27,10 +24,7 @@ export function AuthPage() {
   const accessStore = useAccessStore();
   const goHome = () => navigate(Path.Home);
   const goChat = () => navigate(Path.Chat);
-  const goSaas = () => {
-    trackAuthorizationPageButtonToCPaymentClick();
-    window.location.href = SAAS_CHAT_URL;
-  };
+
 
   const resetAccessCode = () => {
     accessStore.update((access) => {
@@ -117,8 +111,10 @@ export function AuthPage() {
         />
         <IconButton
           text={Locale.Auth.SaasTips}
+          disabled
+          style={{ opacity: 0.5, cursor: 'not-allowed' }}
           onClick={() => {
-            goSaas();
+            // Placeholder - functionality disabled
           }}
         />
       </div>
@@ -169,16 +165,17 @@ function TopBanner() {
         <Logo className={styles["top-banner-logo"]}></Logo>
         <span>
           {Locale.Auth.TopTips}
-          <a
-            href={SAAS_CHAT_URL}
-            rel="stylesheet"
-            onClick={() => {
-              trackSettingsPageGuideToCPaymentClick();
+          <span
+            style={{
+              color: '#999',
+              opacity: 0.6,
+              cursor: 'not-allowed',
+              textDecoration: 'line-through'
             }}
           >
             {Locale.Settings.Access.SaasStart.ChatNow}
-            <Arrow style={{ marginLeft: "4px" }} />
-          </a>
+            <Arrow style={{ marginLeft: "4px", opacity: 0.6 }} />
+          </span>
         </span>
       </div>
       {(isHovered || isMobile) && (

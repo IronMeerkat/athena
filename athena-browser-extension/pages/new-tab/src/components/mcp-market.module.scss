@@ -1,4 +1,4 @@
-@import "../styles/animation.scss";
+@use "../styles/animation.scss" as *;
 
 .mcp-market-page {
   height: 100%;

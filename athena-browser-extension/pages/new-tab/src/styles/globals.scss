@@ -1,5 +1,5 @@
-@import "./animation.scss";
-@import "./window.scss";
+@use "./animation.scss" as *;
+@use "./window.scss" as *;
 
 @mixin light {
   --theme: light;
@@ -272,7 +272,7 @@ div.math {
 
 pre {
   position: relative;
-  
+
   &:hover .copy-code-button {
     pointer-events: all;
     transform: translateX(0px);
@@ -326,9 +326,9 @@ pre {
       text-align: center;
       color: white;
       background: #464e4e;
-    } 
+    }
   }
-  
+
   .expanded {
     background-image: none;
   }

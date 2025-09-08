@@ -1,4 +1,4 @@
-@import "../styles/animation.scss";
+@use "../styles/animation.scss" as *;
 
 .card {
   background-color: var(--white);

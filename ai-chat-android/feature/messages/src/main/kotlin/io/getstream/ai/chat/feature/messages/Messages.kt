@@ -28,6 +28,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -41,10 +46,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -75,6 +85,47 @@ import java.util.UUID
 import timber.log.Timber
 
 @Composable
+private fun SidePanel(onDismiss: () -> Unit) {
+  Box(
+    modifier = Modifier
+      .fillMaxHeight()
+      .width(280.dp)
+      .background(AIChatTheme.colors.itemContent)
+      .padding(16.dp),
+  ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+      Text(
+        text = "Panel",
+        color = AIChatTheme.colors.textHighEmphasis,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+      )
+      Spacer(modifier = Modifier.width(8.dp))
+      Button(
+        onClick = {},
+        enabled = false,
+        colors = ButtonDefaults.buttonColors(
+          disabledContainerColor = AIChatTheme.colors.black20,
+          disabledContentColor = AIChatTheme.colors.textLowEmphasis,
+        ),
+      ) {
+        Text(text = "Settings")
+      }
+      Spacer(modifier = Modifier.weight(1f))
+      Text(
+        text = "Close",
+        color = Color.White,
+        modifier = Modifier
+          .clip(RoundedCornerShape(8.dp))
+          .background(AIChatTheme.colors.primary)
+          .padding(vertical = 8.dp, horizontal = 12.dp)
+          .clickable { onDismiss.invoke() },
+      )
+    }
+  }
+}
+
+@Composable
 fun Messages(
   index: Int,
   channel: Channel,
@@ -90,6 +141,7 @@ fun Messages(
   val localMessages by messagesViewModel.localMessages.collectAsStateWithLifecycle()
   var generatedMessage by remember { mutableStateOf("") }
   val (text, onTextChanged) = remember { mutableStateOf("") }
+  var isSidePanelOpen by remember { mutableStateOf(false) }
 
   LaunchedEffect(key1 = latestResponse) {
     latestResponse?.let {
@@ -117,24 +169,41 @@ fun Messages(
     }
   }
 
-  Column(modifier = Modifier.fillMaxSize()) {
-    MessagesAppBar(channel = channel, onBackClick = onBackClick)
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .windowInsetsPadding(WindowInsets.systemBars)
+      .imePadding(),
+  ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+      MessagesAppBar(channel = channel, onBackClick = onBackClick)
 
-    val effectiveMessages = if (channelState != null) messages else localMessages
-    MessageList(messages = effectiveMessages, state = state, generatedMessage = generatedMessage)
+      val effectiveMessages = if (channelState != null) messages else localMessages
+      MessageList(messages = effectiveMessages, state = state, generatedMessage = generatedMessage)
 
-    MessageInput(
-      text = text,
-      onTextChanged = onTextChanged,
-      onSendMessage = {
-        messagesViewModel.handleEvents(
-          ChatEvent.SendMessage(
-            message = text,
-            sender = "User",
-          ),
-        )
-      },
-    )
+      MessageInput(
+        text = text,
+        onTextChanged = onTextChanged,
+        onSendMessage = {
+          messagesViewModel.handleEvents(
+            ChatEvent.SendMessage(
+              message = text,
+              sender = "User",
+            ),
+          )
+        },
+        onCatClick = { isSidePanelOpen = true },
+      )
+    }
+
+    AnimatedVisibility(
+      visible = isSidePanelOpen,
+      enter = slideInHorizontally(initialOffsetX = { it }),
+      exit = slideOutHorizontally(targetOffsetX = { it }),
+      modifier = Modifier.align(Alignment.CenterEnd),
+    ) {
+      SidePanel(onDismiss = { isSidePanelOpen = false })
+    }
   }
 }
 
@@ -272,6 +341,7 @@ private fun MessageInput(
   text: String,
   onTextChanged: (String) -> Unit,
   onSendMessage: (String) -> Unit,
+  onCatClick: () -> Unit,
 ) {
   val canSend = text.isNotBlank()
 
@@ -286,7 +356,8 @@ private fun MessageInput(
         .padding(end = 8.dp)
         .size(48.dp)
         .clip(CircleShape)
-        .align(Alignment.CenterVertically),
+        .align(Alignment.CenterVertically)
+        .clickable { onCatClick.invoke() },
     )
 
     TextField(

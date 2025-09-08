@@ -22,13 +22,9 @@ console.log('Background loaded');
 console.log("Edit 'chrome-extension/src/background/index.ts' and save to reload.");
 
 // Register sample agents once on startup
-try {
-  const registry = getRegistry();
-  registry.register(new EchoAgent());
-  registry.register(new SummarizeTitleAgent());
-} catch {
-  // ignore
-}
+const registry = getRegistry();
+registry.register(new EchoAgent());
+registry.register(new SummarizeTitleAgent());
 
 type CurrentDOMDataType = {
   url: string;
@@ -47,7 +43,8 @@ let currentDOMData: CurrentDOMDataType = {
 const getHostnameFromUrl = (url: string): string => {
   try {
     return new URL(url).hostname;
-  } catch {
+  } catch (err) {
+    console.error('getHostnameFromUrl: failed to parse URL', url, err);
     return '';
   }
 };
@@ -87,8 +84,8 @@ const scheduleAllowExpiry = (hostname: string, expiresAt: number): void => {
           if (h && h === hostname && t.id) {
             chrome.tabs.sendMessage(t.id, { type: 'REQUEST_DOM_CAPTURE' });
           }
-        } catch {
-          // ignore
+        } catch (err) {
+          console.error('scheduleAllowExpiry: error while processing tab for hostname', hostname, 'tabId:', t?.id, err);
         }
       }
     });
@@ -118,13 +115,13 @@ if (chrome?.alarms?.onAlarm) {
               if (h && h === hostname && t.id) {
                 chrome.tabs.sendMessage(t.id, { type: 'REQUEST_DOM_CAPTURE' });
               }
-            } catch {
-              // ignore
+            } catch (err) {
+              console.error('alarms.onAlarm allow-expiry: error while processing tab', 'hostname:', hostname, 'tabId:', t?.id, err);
             }
           }
         });
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('alarms.onAlarm allow-expiry: tabs.query failed', err);
       }
     }
   });
@@ -154,8 +151,12 @@ const sendMessageToTabWithRetry = async (tabId: number, message: unknown, attemp
         });
       });
       return true;
-    } catch {
-      if (i === attempts - 1) return false;
+    } catch (err) {
+      console.warn('sendMessageToTabWithRetry: attempt failed', i + 1, 'of', attempts, 'tabId:', tabId, err);
+      if (i === attempts - 1) {
+        console.error('sendMessageToTabWithRetry: failed after attempts', attempts, 'tabId:', tabId, err);
+        return false;
+      }
       await delay(150 * (i + 1));
     }
   }
@@ -293,7 +294,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     evaluateAppeal(conversation, { url, title })
       .then(result => sendResponse(result))
-      .catch(() => sendResponse({ assistant: 'Error evaluating appeal.', allow: false, minutes: 0 }));
+      .catch(err => {
+        console.error('EVALUATE_APPEAL: evaluation error', err);
+        sendResponse({ assistant: 'Error evaluating appeal.', allow: false, minutes: 0 });
+      });
     return true; // async response will be sent
   }
 
@@ -325,26 +329,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_SETTINGS') {
     getSettings()
       .then(res => sendResponse(res))
-      .catch(() => sendResponse(null));
+      .catch(err => {
+        console.error('GET_SETTINGS: failed to read settings', err);
+        sendResponse(null);
+      });
     return true;
   }
   if (message.type === 'UPDATE_SETTINGS') {
     updateSettings(async prev => ({ ...prev, ...(message.payload ?? {}) }))
       .then(next => sendResponse({ ok: true, settings: next }))
-      .catch(() => sendResponse({ ok: false }));
+      .catch(err => {
+        console.error('UPDATE_SETTINGS: failed to update settings', err);
+        sendResponse({ ok: false });
+      });
     return true;
   }
   if (message.type === 'ENABLE_STRICT') {
     const { days, hours } = message.payload as { days: number; hours: number };
     enableStrictMode(days, hours)
       .then(next => sendResponse({ ok: true, settings: next }))
-      .catch(() => sendResponse({ ok: false }));
+      .catch(err => {
+        console.error('ENABLE_STRICT: failed to enable strict mode', err);
+        sendResponse({ ok: false });
+      });
     return true;
   }
   if (message.type === 'IS_LOCKED') {
     isSettingsLocked()
       .then(locked => sendResponse({ locked }))
-      .catch(() => sendResponse({ locked: false }));
+      .catch(err => {
+        console.error('IS_LOCKED: failed to determine locked state', err);
+        sendResponse({ locked: false });
+      });
     return true;
   }
 
@@ -354,57 +370,74 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Also listen for tab updates to capture DOM on page refresh or initial load
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && !tab.url.startsWith('chrome://')) {
+  const url = tab.url || '';
+  if (
+    changeInfo.status === 'complete' &&
+    url &&
+    !url.startsWith('chrome://') &&
+    !url.startsWith('chrome-extension://') &&
+    !url.startsWith('devtools://')
+  ) {
     // The DOM is already captured by the content script, this is just an additional check
-    console.log('Tab updated:', tab.url);
+    console.log('Tab updated:', url);
   }
 });
 
 // Inject history hooks into the main world so SPA navigations emit a custom event
 chrome.webNavigation.onCommitted.addListener(details => {
   if (details.frameId !== 0) return;
-  // Skip chrome:// and chrome-extension:// pages (cannot inject there)
-  if (!details.url || details.url.startsWith('chrome://') || details.url.startsWith('chrome-extension://')) return;
+  // Skip chrome://, devtools:// and chrome-extension:// pages (cannot inject there)
+  if (
+    !details.url ||
+    details.url.startsWith('chrome://') ||
+    details.url.startsWith('chrome-extension://') ||
+    details.url.startsWith('devtools://')
+  )
+    return;
+  // Only inject into http/https pages
+  try {
+    const protocol = new URL(details.url).protocol;
+    if (protocol !== 'http:' && protocol !== 'https:') return;
+  } catch (err) {
+    console.error('webNavigation.onCommitted: invalid URL, skipping injection', details.url, err);
+    return;
+  }
   if (!chrome.scripting?.executeScript) return;
 
-  try {
-    void chrome.scripting.executeScript({
+  void chrome.scripting
+    .executeScript({
       target: { tabId: details.tabId },
       world: 'MAIN',
       func: () => {
-        try {
-          // Avoid double-hooking
-          const w = window as Window & { __spaiHistoryHooked?: boolean };
-          if (w.__spaiHistoryHooked) return;
-          w.__spaiHistoryHooked = true;
+      const w = window as Window & { __spaiHistoryHooked?: boolean };
+      if (w.__spaiHistoryHooked) return;
+      w.__spaiHistoryHooked = true;
 
-          const emit = () => window.dispatchEvent(new Event('spai:locationchange'));
-          const originalPushState = history.pushState;
-          const wrappedPushState: typeof history.pushState = function (
-            this: History,
-            ...args: Parameters<History['pushState']>
-          ) {
-            originalPushState.apply(this, args);
-            emit();
-          };
-          history.pushState = wrappedPushState;
-          const originalReplaceState = history.replaceState;
-          const wrappedReplaceState: typeof history.replaceState = function (
-            this: History,
-            ...args: Parameters<History['replaceState']>
-          ) {
-            originalReplaceState.apply(this, args);
-            emit();
-          };
-          history.replaceState = wrappedReplaceState;
-          window.addEventListener('popstate', emit);
-          window.addEventListener('hashchange', emit);
-        } catch {
-          // no-op
-        }
+      const emit = () => window.dispatchEvent(new Event('spai:locationchange'));
+      const originalPushState = history.pushState;
+      const wrappedPushState: typeof history.pushState = function (
+        this: History,
+        ...args: Parameters<History['pushState']>
+      ) {
+        originalPushState.apply(this, args);
+        emit();
+      };
+      history.pushState = wrappedPushState;
+      const originalReplaceState = history.replaceState;
+      const wrappedReplaceState: typeof history.replaceState = function (
+        this: History,
+        ...args: Parameters<History['replaceState']>
+      ) {
+        originalReplaceState.apply(this, args);
+        emit();
+      };
+      history.replaceState = wrappedReplaceState;
+      window.addEventListener('popstate', emit);
+      window.addEventListener('hashchange', emit);
+
       },
+    })
+    .catch(err => {
+      console.error('webNavigation.onCommitted: executeScript failed', details.tabId, details.url, err);
     });
-  } catch {
-    // Best-effort; ignore
-  }
 });

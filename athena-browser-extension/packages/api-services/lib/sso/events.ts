@@ -25,8 +25,8 @@ class SsoEventHub {
             }
           }
         });
-      } catch {
-        // no-op
+      } catch (err) {
+        console.error('SsoEventHub: failed to initialize chrome.runtime fallback', err);
       }
     }
   }

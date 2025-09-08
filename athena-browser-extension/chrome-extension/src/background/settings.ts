@@ -78,7 +78,7 @@ const b64decode = (text: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-const concatArrayBuffers = (buffers: ArrayBuffer[]): ArrayBuffer => {
+const concatArrayBuffers = (buffers: ArrayBufferLike[]): ArrayBuffer => {
   const total = buffers.reduce((acc, b) => acc + b.byteLength, 0);
   const out = new Uint8Array(total);
   let offset = 0;
@@ -121,13 +121,13 @@ const getDerivedKeys = async (saltB64: string): Promise<{ aesKey: CryptoKey; mac
   return derived;
 };
 
-const sign = async (macKey: CryptoKey, parts: ArrayBuffer[]): Promise<string> => {
+const sign = async (macKey: CryptoKey, parts: ArrayBufferLike[]): Promise<string> => {
   const data = concatArrayBuffers(parts);
   const mac = await crypto.subtle.sign('HMAC', macKey, data);
   return b64encode(mac);
 };
 
-const verify = async (macKey: CryptoKey, parts: ArrayBuffer[], macB64: string): Promise<boolean> => {
+const verify = async (macKey: CryptoKey, parts: ArrayBufferLike[], macB64: string): Promise<boolean> => {
   const data = concatArrayBuffers(parts);
   const mac = b64decode(macB64);
   return crypto.subtle.verify('HMAC', macKey, mac, data);
@@ -145,7 +145,7 @@ const encryptSettings = async (settings: Settings): Promise<EncryptedSettings> =
   const cipherB64 = b64encode(cipher);
 
   const vBuf = new Uint8Array([ENCRYPTION_VERSION]).buffer;
-  const mac = await sign(macKey, [vBuf, te.encode(saltB64), te.encode(ivB64), te.encode(cipherB64)]);
+  const mac = await sign(macKey, [vBuf, te.encode(saltB64).buffer, te.encode(ivB64).buffer, te.encode(cipherB64).buffer]);
 
   return {
     v: ENCRYPTION_VERSION,
@@ -163,7 +163,12 @@ const decryptSettings = async (enc: EncryptedSettings): Promise<Settings | null>
     const { aesKey, macKey } = await getDerivedKeys(enc.salt);
     const ok = await verify(
       macKey,
-      [new Uint8Array([enc.v]).buffer, te.encode(enc.salt), te.encode(enc.iv), te.encode(enc.cipherText)],
+      [
+        new Uint8Array([enc.v]).buffer,
+        te.encode(enc.salt).buffer,
+        te.encode(enc.iv).buffer,
+        te.encode(enc.cipherText).buffer,
+      ],
       enc.mac,
     );
     if (!ok) return null;
@@ -173,7 +178,8 @@ const decryptSettings = async (enc: EncryptedSettings): Promise<Settings | null>
     const json = td.decode(plain);
     const parsed = JSON.parse(json) as Settings;
     return parsed;
-  } catch {
+  } catch (err) {
+    console.error('decryptSettings: failed to decrypt settings', err);
     return null;
   }
 };
@@ -235,8 +241,8 @@ export const enableStrictMode = async (days: number, hours: number): Promise<Set
   }));
   try {
     chrome.alarms?.create('strict-expiry', { when: expiresAt });
-  } catch {
-    // ignore
+  } catch (err) {
+    console.error('enableStrictMode: failed to create strict-expiry alarm', err);
   }
   return next;
 };
@@ -278,7 +284,8 @@ export const compileRegexList = (patterns: string[]): RegExp[] => {
   for (const p of patterns) {
     try {
       compiled.push(new RegExp(p));
-    } catch {
+    } catch (err) {
+      console.error('compileRegexList: invalid regex pattern', p, err);
       // skip invalid pattern
     }
   }

@@ -23,13 +23,36 @@
     "@extension/i18n": "workspace:*",
     "@extension/shared": "workspace:*",
     "@extension/storage": "workspace:*",
-    "@extension/ui": "workspace:*"
+    "@extension/ui": "workspace:*",
+    "@fortaine/fetch-event-source": "^3.0.6",
+    "@hello-pangea/dnd": "^18.0.1",
+    "clsx": "^2.1.1",
+    "emoji-picker-react": "^4.13.2",
+    "fuse.js": "^7.1.0",
+    "html-to-image": "^1.11.13",
+    "idb-keyval": "^6.2.2",
+    "js-yaml": "^4.1.0",
+    "katex": "^0.16.22",
+    "mermaid": "^11.11.0",
+    "nanoid": "^5.1.5",
+    "openapi-client-axios": "^7.7.0",
+    "react-markdown": "^10.1.0",
+    "react-router": "^6.30.1",
+    "react-router-dom": "^6.30.1",
+    "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "rt-client": "^0.5.1",
+    "use-debounce": "^10.0.6"
   },
   "devDependencies": {
     "@extension/tailwindcss-config": "workspace:*",
     "@extension/tsconfig": "workspace:*",
     "@extension/vite-config": "workspace:*",
-    "sass": "^1.89.0"
+    "sass": "^1.89.0",
+    "vite-plugin-svgr": "^4.5.0"
   },
   "postcss": {
     "plugins": {

@@ -20,8 +20,16 @@ const Popup = () => {
   const injectContentScript = async () => {
     const [tab] = await chrome.tabs.query({ currentWindow: true, active: true });
 
-    if (tab.url!.startsWith('about:') || tab.url!.startsWith('chrome:')) {
+    const url = tab.url || '';
+    if (
+      url.startsWith('about:') ||
+      url.startsWith('chrome:') ||
+      url.startsWith('chrome://') ||
+      url.startsWith('devtools://') ||
+      url.startsWith('chrome-extension://')
+    ) {
       chrome.notifications.create('inject-error', notificationOptions);
+      return;
     }
 
     await chrome.scripting
@@ -31,7 +39,12 @@ const Popup = () => {
       })
       .catch(err => {
         // Handling errors related to other paths
-        if (err.message.includes('Cannot access a chrome:// URL')) {
+        const message = (err && (err.message || String(err))) as string;
+        if (
+          message.includes('Cannot access a chrome:// URL') ||
+          message.includes('Cannot access contents of url') ||
+          message.includes('requires permission')
+        ) {
           chrome.notifications.create('inject-error', notificationOptions);
         }
       });

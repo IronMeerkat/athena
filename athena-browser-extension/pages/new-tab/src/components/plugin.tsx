@@ -5,7 +5,7 @@ import { PLUGINS_REPO_URL } from "../constant";
 import { IconButton } from "./button";
 import { ErrorBoundary } from "./error";
 
-import styles from "./mask.module.scss";
+import styles from "./mask-placeholder.module.scss";
 import pluginStyles from "./plugin.module.scss";
 
 import EditIcon from "../icons/edit.svg";

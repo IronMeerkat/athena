@@ -3,7 +3,6 @@ import {
   UPLOAD_URL,
   REQUEST_TIMEOUT_MS,
 } from "@/app/constant";
-import { MultimodalContent, RequestMessage } from "@/app/client/api";
 import Locale from "@/app/locales";
 import {
   EventStreamContentType,
@@ -68,46 +67,6 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
 
     reader.readAsDataURL(file);
   });
-}
-
-export async function preProcessImageContentBase(
-  content: RequestMessage["content"],
-  transformImageUrl: (url: string) => Promise<{ [key: string]: any }>,
-) {
-  if (typeof content === "string") {
-    return content;
-  }
-  const result = [];
-  for (const part of content) {
-    if (part?.type == "image_url" && part?.image_url?.url) {
-      try {
-        const url = await cacheImageToBase64Image(part?.image_url?.url);
-        result.push(await transformImageUrl(url));
-      } catch (error) {
-        console.error("Error processing image URL:", error);
-      }
-    } else {
-      result.push({ ...part });
-    }
-  }
-  return result;
-}
-
-export async function preProcessImageContent(
-  content: RequestMessage["content"],
-) {
-  return preProcessImageContentBase(content, async (url) => ({
-    type: "image_url",
-    image_url: { url },
-  })) as Promise<MultimodalContent[] | string>;
-}
-
-export async function preProcessImageContentForAlibabaDashScope(
-  content: RequestMessage["content"],
-) {
-  return preProcessImageContentBase(content, async (url) => ({
-    image: url,
-  }));
 }
 
 const imageCaches: Record<string, string> = {};
@@ -342,7 +301,9 @@ export function stream(
           try {
             const resJson = await res.clone().json();
             extraInfo = prettyObject(resJson);
-          } catch {}
+          } catch (err) {
+            console.error('[Request] failed to parse JSON error body', err);
+          }
 
           if (res.status === 401) {
             responseTexts.push(Locale.Error.Unauthorized);
@@ -568,7 +529,9 @@ export function streamWithThink(
           try {
             const resJson = await res.clone().json();
             extraInfo = prettyObject(resJson);
-          } catch {}
+          } catch (err) {
+            console.error('[Request] failed to parse JSON error body', err);
+          }
 
           if (res.status === 401) {
             responseTexts.push(Locale.Error.Unauthorized);

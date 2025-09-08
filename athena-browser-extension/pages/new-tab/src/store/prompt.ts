@@ -149,7 +149,7 @@ export const usePromptStore = createPersistStore(
     onRehydrateStorage(state) {
       // Skip store rehydration on server side
       if (typeof window === "undefined") {
-        return;
+        throw new Error("Window is undefined - cannot run on server side");
       }
 
       const PROMPT_URL = "./prompts.json";
@@ -157,9 +157,18 @@ export const usePromptStore = createPersistStore(
       type PromptList = Array<[string, string]>;
 
       fetch(PROMPT_URL)
-        .then((res) => res.json())
         .then((res) => {
-          let fetchPrompts = [res.en, res.tw, res.cn];
+          if (!res.ok) {
+            throw new Error(`Failed to load prompts.json: ${res.status} ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then((res) => {
+          const en = Array.isArray(res.en) ? res.en : [];
+          const tw = Array.isArray(res.tw) ? res.tw : [];
+          const cn = Array.isArray(res.cn) ? res.cn : [];
+
+          let fetchPrompts = [en, tw, cn] as PromptList[];
           if (getLang() === "cn") {
             fetchPrompts = fetchPrompts.reverse();
           }
@@ -180,9 +189,14 @@ export const usePromptStore = createPersistStore(
           const allPromptsForSearch = builtinPrompts
             .reduce((pre, cur) => pre.concat(cur), [])
             .filter((v) => !!v.title && !!v.content);
-          SearchService.count.builtin =
-            res.en.length + res.cn.length + res.tw.length;
+          SearchService.count.builtin = en.length + cn.length + tw.length;
           SearchService.init(allPromptsForSearch, userPrompts);
+        })
+        .catch((err) => {
+          console.error("[PromptStore] Failed to fetch prompts.json", err);
+          const userPrompts = usePromptStore.getState().getUserPrompts() ?? [];
+          SearchService.count.builtin = 0;
+          SearchService.init([], userPrompts);
         });
     },
   },

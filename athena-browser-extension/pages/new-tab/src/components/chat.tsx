@@ -197,7 +197,7 @@ function PromptToast(props: {
 
 function useSubmitHandler() {
   const config = useAppConfig();
-  const submitKey = config.submitKey;
+  const submitKey = config.submitKey as unknown as SubmitKey;
   const isComposing = useRef(false);
 
   useEffect(() => {
@@ -446,7 +446,7 @@ export function ChatActions(props: {
   const session = chatStore.currentSession();
 
   // switch themes
-  const theme = config.theme;
+  const theme = config.theme as Theme;
 
   function nextTheme() {
     const themes = [Theme.Auto, Theme.Light, Theme.Dark];
@@ -644,9 +644,6 @@ export function ChatActions(props: {
             onSelection={(s) => {
               if (s.length === 0) return;
               const size = s[0];
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.size = size;
-              });
               showToast(size);
             }}
           />
@@ -671,9 +668,7 @@ export function ChatActions(props: {
             onSelection={(q) => {
               if (q.length === 0) return;
               const quality = q[0];
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.quality = quality;
-              });
+              // mask removed in Athena mode
               showToast(quality);
             }}
           />
@@ -698,9 +693,7 @@ export function ChatActions(props: {
             onSelection={(s) => {
               if (s.length === 0) return;
               const style = s[0];
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.style = style;
-              });
+              // mask removed in Athena mode
               showToast(style);
             }}
           />
@@ -900,7 +893,7 @@ function _Chat() {
   // if user is typing, should auto scroll to bottom
   // if user is not typing, should auto scroll to bottom only if already at bottom
   const { setAutoScroll, scrollDomToBottom } = useScrollToBottom(
-    scrollRef,
+    scrollRef as RefObject<HTMLDivElement>,
     (isScrolledToBottom || isAttachWithTop) && !isTyping,
     session.messages,
   );
@@ -1007,34 +1000,33 @@ function _Chat() {
     ChatControllerPool.stop(session.id, messageId);
   };
 
-  useEffect(() => {
-    chatStore.updateTargetSession(session, (session) => {
-      const stopTiming = Date.now() - REQUEST_TIMEOUT_MS;
-      session.messages.forEach((m) => {
-        // check if should stop all stale messages
-        if (m.isError || new Date(m.date).getTime() < stopTiming) {
-          if (m.streaming) {
-            m.streaming = false;
-          }
-
-          if (m.content.length === 0) {
-            m.isError = true;
-            m.content = prettyObject({
-              error: true,
-              message: "empty response",
-            });
-          }
-        }
-      });
-
-      // auto sync mask config from global config
-      if (session.mask.syncGlobalConfig) {
-        console.log("[Mask] syncing from global, name = ", session.mask.name);
-        session.mask.modelConfig = { ...config.modelConfig };
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  // Disabled stale message cleanup to avoid any potential render->store update loop
+  // useEffect(() => {
+  //   const stopTiming = Date.now() - REQUEST_TIMEOUT_MS;
+  //   const needUpdate = session.messages.some((m) => {
+  //     const isStale = m.isError || new Date(m.date).getTime() < stopTiming;
+  //     if (!isStale) return false;
+  //     if (m.streaming) return true;
+  //     if (m.content.length === 0) return true;
+  //     return false;
+  //   });
+  //   if (!needUpdate) return;
+  //   chatStore.updateTargetSession(session, (session) => {
+  //     const stopTimingInner = Date.now() - REQUEST_TIMEOUT_MS;
+  //     session.messages.forEach((m) => {
+  //       const isStale = m.isError || new Date(m.date).getTime() < stopTimingInner;
+  //       if (!isStale) return;
+  //       if (m.streaming) {
+  //         m.streaming = false;
+  //       }
+  //       if (m.content.length === 0) {
+  //         m.isError = true;
+  //         m.content = prettyObject({ error: true, message: "empty response" });
+  //       }
+  //     });
+  //   });
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [session.id, session.lastUpdate]);
 
   // check if should send message
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1132,11 +1124,8 @@ function _Chat() {
     inputRef.current?.focus();
   };
 
-  const onPinMessage = (message: ChatMessage) => {
-    chatStore.updateTargetSession(session, (session) =>
-      session.mask.context.push(message),
-    );
-
+  const onPinMessage = (_message: ChatMessage) => {
+    // mask context removed in Athena mode
     showToast(Locale.Chat.Actions.PinToastContent, {
       text: Locale.Chat.Actions.PinToastAction,
       onClick: () => {
@@ -1219,7 +1208,7 @@ function _Chat() {
           : [],
       )
       .concat(
-        userInput.length > 0 && config.sendPreviewBubble
+        userInput.length > 0 && !!config.sendPreviewBubble
           ? [
               {
                 ...createMessage({
@@ -1359,12 +1348,11 @@ function _Chat() {
     return () => {
       localStorage.setItem(key, dom?.value ?? "");
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      const currentModel = chatStore.currentSession().mask.modelConfig.model;
+      const currentModel = useAppConfig.getState().modelConfig.model;
       if (!isVisionModel(currentModel)) {
         return;
       }
@@ -1690,11 +1678,11 @@ function _Chat() {
                                     chatStore.updateTargetSession(
                                       session,
                                       (session) => {
-                                        const m = session.mask.context
-                                          .concat(session.messages)
-                                          .find((m) => m.id === message.id);
+                                        const m = session.messages.find(
+                                          (mm) => mm.id === message.id,
+                                        );
                                         if (m) {
-                                          m.content = newContent;
+                                          m.content = newContent as unknown as any;
                                         }
                                       },
                                     );
@@ -1829,7 +1817,7 @@ function _Chat() {
                               }}
                               fontSize={fontSize}
                               fontFamily={fontFamily}
-                              parentRef={scrollRef}
+                              parentRef={scrollRef as RefObject<HTMLDivElement>}
                               defaultShow={i >= messages.length - 6}
                             />
                             {getMessageImages(message).length == 1 && (

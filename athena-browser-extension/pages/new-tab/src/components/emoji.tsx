@@ -6,21 +6,21 @@ import EmojiPicker, {
 
 import { ModelType } from "../store";
 
-import BotIconDefault from "../icons/llm-icons/default.svg";
-import BotIconOpenAI from "../icons/llm-icons/openai.svg";
-import BotIconGemini from "../icons/llm-icons/gemini.svg";
-import BotIconGemma from "../icons/llm-icons/gemma.svg";
-import BotIconClaude from "../icons/llm-icons/claude.svg";
-import BotIconMeta from "../icons/llm-icons/meta.svg";
-import BotIconMistral from "../icons/llm-icons/mistral.svg";
-import BotIconDeepseek from "../icons/llm-icons/deepseek.svg";
-import BotIconMoonshot from "../icons/llm-icons/moonshot.svg";
-import BotIconQwen from "../icons/llm-icons/qwen.svg";
-import BotIconWenxin from "../icons/llm-icons/wenxin.svg";
-import BotIconGrok from "../icons/llm-icons/grok.svg";
-import BotIconHunyuan from "../icons/llm-icons/hunyuan.svg";
-import BotIconDoubao from "../icons/llm-icons/doubao.svg";
-import BotIconChatglm from "../icons/llm-icons/chatglm.svg";
+import BotIconDefault from "../icons/llm-icons/default.svg?react";
+import BotIconOpenAI from "../icons/llm-icons/openai.svg?react";
+import BotIconGemini from "../icons/llm-icons/gemini.svg?react";
+import BotIconGemma from "../icons/llm-icons/gemma.svg?react";
+import BotIconClaude from "../icons/llm-icons/claude.svg?react";
+import BotIconMeta from "../icons/llm-icons/meta.svg?react";
+import BotIconMistral from "../icons/llm-icons/mistral.svg?react";
+import BotIconDeepseek from "../icons/llm-icons/deepseek.svg?react";
+import BotIconMoonshot from "../icons/llm-icons/moonshot.svg?react";
+import BotIconQwen from "../icons/llm-icons/qwen.svg?react";
+import BotIconWenxin from "../icons/llm-icons/wenxin.svg?react";
+import BotIconGrok from "../icons/llm-icons/grok.svg?react";
+import BotIconHunyuan from "../icons/llm-icons/hunyuan.svg?react";
+import BotIconDoubao from "../icons/llm-icons/doubao.svg?react";
+import BotIconChatglm from "../icons/llm-icons/chatglm.svg?react";
 
 export function getEmojiUrl(unified: string, style: EmojiStyle) {
   // Whoever owns this Content Delivery Network (CDN), I am using your CDN to serve emojis

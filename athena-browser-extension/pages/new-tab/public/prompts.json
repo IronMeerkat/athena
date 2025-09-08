@@ -1,0 +1,10 @@
+{
+  "en": [
+    ["Assistant", "You are a helpful AI assistant."],
+    ["Code Review", "Please review the following code and provide feedback on:\n1. Code quality and best practices\n2. Potential bugs or issues\n3. Performance optimizations\n4. Security considerations\n\nCode:\n{{input}}"],
+    ["Summarize", "Please provide a concise summary of the following text:\n\n{{input}}"],
+    ["Translate", "Please translate the following text to {{target_language}}:\n\n{{input}}"],
+    ["Explain", "Please explain the following concept in simple terms:\n\n{{input}}"]
+  ]
+}
+

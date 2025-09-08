@@ -1,4 +1,3 @@
-// Next.js-specific annotations removed
 import { ChatMessage, useAppConfig, useChatStore } from "../store";
 import Locale from "../locales";
 import styles from "./exporter.module.scss";
@@ -28,22 +27,13 @@ import DownloadIcon from "../icons/download.svg";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageSelector, useMessageSelector } from "./message-selector";
 import { Avatar } from "./emoji";
-// Remove Next.js dynamic and Image; use direct import and <img>
 
-// Lazy import at call sites to avoid bundler/lint complaining upfront
-let htmlToImage: any;
-async function ensureHtmlToImage() {
-  if (!htmlToImage) {
-    htmlToImage = await import("html-to-image");
-  }
-  return htmlToImage;
-}
+import { toBlob, toPng } from 'html-to-image';
 
 import { prettyObject } from "../utils/format";
 import { EXPORT_MESSAGE_CLASS_NAME } from "../constant";
 import { getClientConfig } from "../config/client";
 import { getMessageTextContent } from "../utils";
-// Mask UI removed for Athena mode
 import clsx from "clsx";
 
 import { Markdown } from "./markdown";
@@ -415,7 +405,7 @@ export function ImagePreviewer(props: {
     showToast(Locale.Export.Image.Toast);
     const dom = previewRef.current;
     if (!dom) return;
-    ensureHtmlToImage().then(({ toBlob }: any) => toBlob(dom)).then((blob: Blob) => {
+    toBlob(dom).then((blob: Blob) => {
       if (!blob) return;
       try {
         navigator.clipboard
@@ -445,7 +435,6 @@ export function ImagePreviewer(props: {
     const isApp = getClientConfig()?.isApp;
 
     try {
-      const { toPng } = await ensureHtmlToImage();
       const blob = await toPng(dom);
       if (!blob) return;
 
@@ -519,7 +508,7 @@ export function ImagePreviewer(props: {
             <div className={styles["icons"]}>
               <Avatar avatar={config.avatar} />
               <span className={styles["icon-space"]}>&</span>
-              <Avatar avatar={mask.avatar} />
+              <Avatar model={config.modelConfig.model} />
             </div>
           </div>
           <div>
@@ -550,7 +539,7 @@ export function ImagePreviewer(props: {
                 {m.role === "user" ? (
                   <Avatar avatar={config.avatar}></Avatar>
                 ) : (
-                  <Avatar avatar={session.mask.avatar} />
+                  <Avatar model={config.modelConfig.model} />
                 )}
               </div>
 

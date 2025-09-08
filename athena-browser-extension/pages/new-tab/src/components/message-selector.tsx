@@ -3,7 +3,6 @@ import { ChatMessage, useAppConfig, useChatStore } from "../store";
 import { Updater } from "../typing";
 import { IconButton } from "./button";
 import { Avatar } from "./emoji";
-import { MaskAvatar } from "./mask";
 import Locale from "../locales";
 
 import styles from "./message-selector.module.scss";
@@ -87,7 +86,7 @@ export function MessageSelector(props: {
   const messages = useMemo(
     () =>
       allMessages.filter(
-        (m, i) =>
+        (m: ChatMessage, i: number) =>
           m.id && // message must have id
           isValid(m) &&
           (i >= allMessages.length - 1 || isValid(allMessages[i + 1])),
@@ -105,7 +104,7 @@ export function MessageSelector(props: {
   const doSearch = (text: string) => {
     const searchResults = new Set<string>();
     if (text.length > 0) {
-      messages.forEach((m) =>
+      messages.forEach((m: ChatMessage) =>
         getMessageTextContent(m).includes(text)
           ? searchResults.add(m.id!)
           : null,
@@ -119,7 +118,7 @@ export function MessageSelector(props: {
 
   const selectAll = () => {
     props.updateSelection((selection) =>
-      messages.forEach((m) => selection.add(m.id!)),
+      messages.forEach((m: ChatMessage) => selection.add(m.id!)),
     );
   };
 
@@ -173,7 +172,7 @@ export function MessageSelector(props: {
                 selection.clear();
                 messages
                   .slice(messageCount - LATEST_COUNT)
-                  .forEach((m) => selection.add(m.id!));
+                  .forEach((m: ChatMessage) => selection.add(m.id!));
               })
             }
           />
@@ -189,7 +188,7 @@ export function MessageSelector(props: {
       </div>
 
       <div className={styles["messages"]}>
-        {messages.map((m, i) => {
+        {messages.map((m: ChatMessage, i: number) => {
           if (!isInSearchResult(m.id!)) return null;
           const id = m.id ?? i;
           const isSelected = props.selection.has(id);
@@ -211,10 +210,7 @@ export function MessageSelector(props: {
                 {m.role === "user" ? (
                   <Avatar avatar={config.avatar}></Avatar>
                 ) : (
-                  <MaskAvatar
-                    avatar={session.mask.avatar}
-                    model={m.model || session.mask.modelConfig.model}
-                  />
+                  <Avatar model={m.model || config.modelConfig.model} />
                 )}
               </div>
               <div className={styles["body"]}>

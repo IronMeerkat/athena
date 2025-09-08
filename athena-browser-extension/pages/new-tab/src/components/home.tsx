@@ -1,6 +1,6 @@
 "use client";
 
-require("../polyfill");
+import "../polyfill";
 
 import { useEffect, useState } from "react";
 import styles from "./home.module.scss";
@@ -48,7 +48,6 @@ import { NewChat } from "./new-chat";
 // import { PluginPage } from "./plugin";
 import { SearchChatPage as SearchChat } from "./search-chat";
 import { Sd } from "./sd";
-import { McpMarketPage } from "./mcp-market";
 
 export function useSwitchTheme() {
   const config = useAppConfig();
@@ -168,7 +167,7 @@ function Screen() {
             <Route path={Path.SearchChat} element={<SearchChat />} />
             <Route path={Path.Chat} element={<Chat />} />
             <Route path={Path.Settings} element={<Settings />} />
-            <Route path={Path.McpMarket} element={<McpMarketPage />} />
+            {/* <Route path={Path.McpMarket} element={<McpMarketPage />} /> */}
           </Routes>
         </WindowContent>
       </>

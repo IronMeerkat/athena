@@ -7,9 +7,7 @@ export enum SubmitKey {
   AltEnter = "AltEnter",
   MetaEnter = "MetaEnter",
 }
-import { LocaleType } from "./index";
-import { SAAS_CHAT_UTM_URL } from "../constant";
-// if you are adding a new translation, please use PartialLocaleType instead of LocaleType
+import type { LocaleType } from "../types/locales";
 
 const isApp = !!getClientConfig()?.isApp;
 const en: LocaleType = {
@@ -261,7 +259,7 @@ const en: LocaleType = {
       },
 
       LocalState: "Local Data",
-      Overview: (overview: any) => {
+      Overview: (overview: { chat: number; message: number; prompt: number; mask: number }) => {
         return `${overview.chat} chats，${overview.message} messages，${overview.prompt} prompts，${overview.mask} masks`;
       },
       ImportFailed: "Failed to import from file",
@@ -306,7 +304,7 @@ const en: LocaleType = {
 
     Usage: {
       Title: "Account Balance",
-      SubTitle(used: any, total: any) {
+      SubTitle(used: number, total: number) {
         return `Used this month $${used}, subscription $${total}`;
       },
       IsChecking: "Checking...",
@@ -655,7 +653,7 @@ const en: LocaleType = {
     Failed: "Download failed.",
   },
   Context: {
-    Toast: (x: any) => `With ${x} contextual prompts`,
+    Toast: (x: string | number) => `With ${x} contextual prompts`,
     Edit: "Current Chat Settings",
     Add: "Add a Prompt",
     Clear: "Context Cleared",

@@ -19,7 +19,6 @@ import ConfirmIcon from "../icons/confirm.svg";
 import ConnectionIcon from "../icons/connection.svg";
 import CloudSuccessIcon from "../icons/cloud-success.svg";
 import CloudFailIcon from "../icons/cloud-fail.svg";
-import { trackSettingsPageGuideToCPaymentClick } from "../utils/auth-settings-events";
 import {
   Input,
   List,
@@ -34,14 +33,7 @@ import {
 import { ModelConfigList } from "./model-config";
 
 import { IconButton } from "./button";
-import {
-  SubmitKey,
-  useChatStore,
-  Theme,
-  useUpdateStore,
-  useAccessStore,
-  useAppConfig,
-} from "../store";
+import { SubmitKey, useChatStore, Theme, useAccessStore, useAppConfig } from "../store";
 
 import Locale, {
   AllLangs,
@@ -70,9 +62,7 @@ import { Avatar, AvatarPicker } from "./emoji";
 import { getClientConfig } from "../config/client";
 import { useSyncStore } from "../store/sync";
 import { nanoid } from "nanoid";
-import { useMaskStore } from "../store/mask";
 import { ProviderType } from "../utils/cloud";
-import { TTSConfigList } from "./tts-config";
 import { RealtimeConfigList } from "./realtime-chat/realtime-config";
 
 function EditPromptModal(props: { id: string; onClose: () => void }) {
@@ -475,7 +465,6 @@ function SyncItems() {
   const syncStore = useSyncStore();
   const chatStore = useChatStore();
   const promptStore = usePromptStore();
-  const maskStore = useMaskStore();
   const couldSync = useMemo(() => {
     return syncStore.cloudSync();
   }, [syncStore]);
@@ -490,9 +479,9 @@ function SyncItems() {
       chat: sessions.length,
       message: messageCount,
       prompt: Object.keys(promptStore.prompts).length,
-      mask: Object.keys(maskStore.masks).length,
+      mask: 0,
     };
-  }, [chatStore.sessions, maskStore.masks, promptStore.prompts]);
+  }, [chatStore.sessions, promptStore.prompts]);
 
   return (
     <>
@@ -572,41 +561,19 @@ export function Settings() {
   const config = useAppConfig();
   const updateConfig = config.update;
 
-  const updateStore = useUpdateStore();
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const currentVersion = updateStore.formatVersion(updateStore.version);
-  const remoteId = updateStore.formatVersion(updateStore.remoteVersion);
-  const hasNewVersion = semverCompare(currentVersion, remoteId) === -1;
+  const [checkingUpdate] = useState(false);
+  const currentVersion = "0.0.0";
+  const remoteId = "0.0.0";
+  const hasNewVersion = false;
   const updateUrl = getClientConfig()?.isApp ? RELEASE_URL : UPDATE_URL;
-
-  function checkUpdate(force = false) {
-    setCheckingUpdate(true);
-    updateStore.getLatestVersion(force).then(() => {
-      setCheckingUpdate(false);
-    });
-
-    console.log("[Update] local version ", updateStore.version);
-    console.log("[Update] remote version ", updateStore.remoteVersion);
-  }
+  function checkUpdate(_force = false) {}
 
   const accessStore = useAccessStore();
-  const shouldHideBalanceQuery = useMemo(() => {
-    const isOpenAiUrl = accessStore.openaiUrl.includes(OPENAI_BASE_URL);
-
-    return (
-      accessStore.hideBalanceQuery ||
-      isOpenAiUrl ||
-      accessStore.provider === ServiceProvider.Azure
-    );
-  }, [
-    accessStore.hideBalanceQuery,
-    accessStore.openaiUrl,
-    accessStore.provider,
-  ]);
+  const shouldHideBalanceQuery = useMemo(() => true, []);
 
   const usage = {
-    used: updateStore.used,
-    subscription: updateStore.subscription,
+    used: 0,
+    subscription: 0,
   };
   const [loadingUsage, setLoadingUsage] = useState(false);
   function checkUsage(force = false) {
@@ -614,24 +581,17 @@ export function Settings() {
       return;
     }
 
-    setLoadingUsage(true);
-    updateStore.updateUsage(force).finally(() => {
-      setLoadingUsage(false);
-    });
+    setLoadingUsage(false);
   }
 
-  const enabledAccessControl = useMemo(
-    () => accessStore.enabledAccessControl(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  const enabledAccessControl = useMemo(() => false, []);
 
   const promptStore = usePromptStore();
   const builtinCount = SearchService.count.builtin;
   const customCount = promptStore.getUserPrompts().length ?? 0;
   const [shouldShowPromptModal, setShowPromptModal] = useState(false);
 
-  const showUsage = accessStore.isAuthorized();
+  const showUsage = true;
   useEffect(() => {
     // checks per minutes
     checkUpdate();
@@ -645,12 +605,7 @@ export function Settings() {
         navigate(Path.Home);
       }
     };
-    if (clientConfig?.isApp) {
-      // Force to set custom endpoint to true if it's app
-      accessStore.update((state) => {
-        state.useCustomConfig = true;
-      });
-    }
+    // Athena mode: do nothing
     document.addEventListener("keydown", keydownEvent);
     return () => {
       document.removeEventListener("keydown", keydownEvent);
@@ -696,9 +651,10 @@ export function Settings() {
         icon={<FireIcon />}
         type={"primary"}
         text={Locale.Settings.Access.SaasStart.ChatNow}
+        disabled
+        style={{ opacity: 0.5, cursor: 'not-allowed' }}
         onClick={() => {
-          trackSettingsPageGuideToCPaymentClick();
-          window.location.href = SAAS_CHAT_URL;
+          // Placeholder - functionality disabled
         }}
       />
     </ListItem>
@@ -1731,40 +1687,7 @@ export function Settings() {
         <SyncItems />
 
         <List>
-          <ListItem
-            title={Locale.Settings.Mask.Splash.Title}
-            subTitle={Locale.Settings.Mask.Splash.SubTitle}
-          >
-            <input
-              aria-label={Locale.Settings.Mask.Splash.Title}
-              type="checkbox"
-              checked={!config.dontShowMaskSplashScreen}
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.dontShowMaskSplashScreen =
-                      !e.currentTarget.checked),
-                )
-              }
-            ></input>
-          </ListItem>
-
-          <ListItem
-            title={Locale.Settings.Mask.Builtin.Title}
-            subTitle={Locale.Settings.Mask.Builtin.SubTitle}
-          >
-            <input
-              aria-label={Locale.Settings.Mask.Builtin.Title}
-              type="checkbox"
-              checked={config.hideBuiltinMasks}
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.hideBuiltinMasks = e.currentTarget.checked),
-                )
-              }
-            ></input>
-          </ListItem>
+          {/* Mask splash and builtin controls removed in Athena mode */}
         </List>
 
         <List>
@@ -1922,7 +1845,7 @@ export function Settings() {
             }}
           />
         </List>
-        <List>
+        {/* <List>
           <TTSConfigList
             ttsConfig={config.ttsConfig}
             updateConfig={(updater) => {
@@ -1931,7 +1854,7 @@ export function Settings() {
               config.update((config) => (config.ttsConfig = ttsConfig));
             }}
           />
-        </List>
+        </List> */}
 
         <DangerItems />
       </div>
