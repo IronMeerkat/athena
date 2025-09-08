@@ -84,7 +84,6 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
                     producer = Producer(channel)
                     producer.publish({"event": event, "data": data}, exchange=exchange, routing_key=routing_key, serializer="json", declare=[exchange])
         except Exception:
-            # Best-effort publishing; do not fail the run on stream errors
             pass
 
 

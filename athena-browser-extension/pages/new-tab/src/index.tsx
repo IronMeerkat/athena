@@ -1,4 +1,5 @@
 import '@src/index.css';
+import '@src/styles/globals.scss';
 import { Home } from '@src/components/home';
 import { createRoot } from 'react-dom/client';
 

@@ -1,5 +1,7 @@
 package com.ironmeerkat.athena.digitalwellbeing.policy
 
+import android.annotation.SuppressLint
+import android.provider.Settings
 import com.ironmeerkat.athena.digitalwellbeing.db.DecisionDao
 import com.ironmeerkat.athena.digitalwellbeing.db.DecisionEntity
 import com.ironmeerkat.athena.digitalwellbeing.db.RuleDao
@@ -36,10 +38,20 @@ class PolicyEngine @Inject constructor(
   private val decisionCache: DecisionCache,
   @Dispatcher(AIChatDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
-  private val statePauseKey = "pause_mode" // values: off|soft|hard
+  private val statePauseKey = "off" // values: off|soft|hard
 
   suspend fun onTargetChanged(target: Target): PolicyDecision = withContext(ioDispatcher) {
     Timber.d("onTargetChanged: %s", target)
+
+    val appName = target.appPackage
+
+    if (appName == null || appName in listOf(
+        "com.ironmeerkat.athena",
+        "com.sec.android.app.launcher",
+        "com.android.systemui")) {
+      return@withContext PolicyDecision.Allow("Nothing to check")
+    }
+
     val now = System.currentTimeMillis()
 
     decisionDao.purgeExpired(now)
@@ -78,10 +90,11 @@ class PolicyEngine @Inject constructor(
     // Remote guardian check via DRF
     try {
       val req = DeviceAttemptRequest(
-        deviceId = getDeviceId(),
-        app = target.appPackage,
-        url = target.url,
-        ts = null,
+          deviceId = getDeviceId(),
+          url = target.url,
+          app = target.appPackage,
+          title = target.toString(),
+          ts = System.currentTimeMillis().toString(),
       )
       val resp = athenaService.deviceAttempt(req)
       val remoteDecision = when (resp.decision.lowercase()) {
@@ -128,8 +141,9 @@ class PolicyEngine @Inject constructor(
     Timber.i("insertTemporaryWhitelist: %s for %d min", targetPattern, ttlMinutes)
   }
 
-  private fun getDeviceId(): String =
-    android.os.Build.SERIAL ?: android.os.Build.getSerial()
+  @SuppressLint("HardwareIds")
+  private fun getDeviceId(): String {
+
+    return Settings.Secure.getString(null, Settings.Secure.ANDROID_ID) ?: android.os.Build.SERIAL ?: "unknown_device"
+  }
 }
-
-

@@ -58,9 +58,10 @@ data class CreateRunResponse(
 data class DeviceAttemptRequest(
   @SerialName("device_id") val deviceId: String,
   @SerialName("event_id") val eventId: String? = null,
-  val app: String? = null,
+  val title: String = "",
   val url: String? = null,
-  val ts: String? = null,
+  val app: String? = null,
+  val ts: String? = System.currentTimeMillis().toString(),
 )
 
 /** Response for POST /api/device/attempt */

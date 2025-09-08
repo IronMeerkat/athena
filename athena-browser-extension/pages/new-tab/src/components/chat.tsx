@@ -1649,7 +1649,7 @@ function _Chat() {
                           <div className={styles["chat-message-header"]}>
                             <div className={styles["chat-message-avatar"]}>
                               <div className={styles["chat-message-edit"]}>
-                                <IconButton
+                                {/* <IconButton
                                   icon={<EditIcon />}
                                   aria={Locale.Chat.Actions.Edit}
                                   onClick={async () => {
@@ -1687,7 +1687,7 @@ function _Chat() {
                                       },
                                     );
                                   }}
-                                ></IconButton>
+                                ></IconButton> */}
                               </div>
                               {isUser ? (
                                 <Avatar avatar={config.avatar} />
