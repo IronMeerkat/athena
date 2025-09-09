@@ -20,11 +20,11 @@ class DeviceAttemptView(APIView):
     "sse": "/api/runs/{id}/events"}
     """
 
-    def post(self, request: HttpRequest) -> Response:  # type: ignore[override]
-        logger.info(f"DeviceAttemptView: {request.data}")
+    def post(self, request: HttpRequest) -> Response:
+        logger.info(f"DeviceAttemptView: {request.data['title']} {request.data['app']}")
         data = request.data
-        # Accept missing event_id by generating one
-        event_id = data.get("event_id") or str(uuid.uuid4())
+
+        event_id = data.get("event_id")
 
         # Route owner attempts to sensitive by default; guests to public
         queue = "sensitive"

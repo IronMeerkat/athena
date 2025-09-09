@@ -52,14 +52,14 @@ class GuardianState(BaseModel, frozen=False):
     path: str = "/"
     package: str = ""
     activity: str = ""
-    strictness: int = 5
+    strictness: int = 10
     goal: str = ""
 
     # Classification
-    classification: Classification = Classification.NEUTRAL
+    classification: Classification = Classification.UNHEALTHY_HABIT
 
     # Output decision
-    decision: Decision = Decision.ALLOW
+    decision: Decision = Decision.BLOCK
     permit_ttl: int = 0
     appeal_available: bool = False
     message: str = ""
@@ -80,14 +80,14 @@ class GuardianFlow(BaseFlow):
         def respond(state: GuardianState) -> GuardianState:
             celery_app.send_task(
                 "gateway.dispatch_push",
-                args=[state.model_dump(mode="json")],
+                args=[state.device_id, state.title, state.message, "guardian", state.model_dump()],
                 queue="gateway",
             )
             return state
 
         def assemble(state: GuardianState) -> GuardianState:
 
-            logger.info(f"Assembling state: {state}")
+            # logger.info(f"Assembling state: {state}")
             # Derive URL parts and Android hints
             url_value = state.url or ""
             parsed = urlparse(url_value)
@@ -115,6 +115,7 @@ class GuardianFlow(BaseFlow):
                 "strictness": state.strictness,
                 "timeblock_goal": state.goal,
                 "host": state.host,
+                "app": state.app,
                 "path": state.path,
                 "activity": state.activity,
                 "title": state.title,
@@ -133,8 +134,10 @@ class GuardianFlow(BaseFlow):
             return respond(state.model_copy(update={"classification": label}))
 
         def decide(state: GuardianState) -> GuardianState:
-            strict = int(state.strictness)
-            label = state.classification
+            # strict = int(state.strictness)
+            strict = 7
+            # label = state.classification
+            label = Classification.UNHEALTHY_HABIT
 
             # Default outputs
             updated = state.model_copy(update={
@@ -185,6 +188,8 @@ class GuardianFlow(BaseFlow):
                     "decision": Decision.BLOCK,
                     "appeal_available": False,
                 })
+
+            logger.info(f"Decided: {updated}")
             return respond(updated)
 
         def project(state: GuardianState) -> GuardianState:

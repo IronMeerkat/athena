@@ -5,6 +5,7 @@ No legacy FIREBASE_SERVER_KEY/SENDER_ID required.
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict
 
 import firebase_admin
@@ -14,7 +15,7 @@ from athena_logging import get_logger
 
 logger = get_logger(__name__)
 
-def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
+def send_fcm_message(token: str, title: str, body: str, source: str, result: Dict[str, Any]=None) -> str:
     """
     Send a push notification to a device via Firebase Cloud Messaging.
 
@@ -22,30 +23,20 @@ def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
     :param data: Dict that may include 'title' and 'body' plus custom fields.
     :return: The message ID string from FCM.
     """
-    logger.info(f"Sending FCM message to {token} with data {data}")
+    logger.info(f"Sending FCM message with data {title} {body} from {source}")
     if not firebase_admin._apps:
         raise RuntimeError(
             "Firebase Admin is not initialized. Set FIREBASE_CREDENTIALS to the "
             "path of your service account JSON."
         )
 
-    title = data.get("title")
-    body = data.get("body")
-    notif = messaging.Notification(title=str(title) if title else None,
-                                   body=str(body) if body else None)
-    logger.info(f"Notification: {notif}")
-
-    # FCM data payload must be str->str
-    payload = {
-        k: str(v)
-        for k, v in data.items()
-        if k not in {"title", "body"} and v is not None
-    }
+    notif = messaging.Notification(title=title, body=body)
 
     message = messaging.Message(
         token=token,
-        notification=notif if (title or body) else None,
-        data=payload if payload else None,
+        notification=notif,
+        data={"source": source, "result": json.dumps(result or {})},
     )
-    logger.info(f"Message: {message}")
+
+    logger.info(f"Message: {result}")
     return messaging.send(message)

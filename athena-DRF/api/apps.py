@@ -1,11 +1,12 @@
 from django.apps import AppConfig
-from django.conf import settings
 from pathlib import Path
 import os
 
 import firebase_admin
 from firebase_admin import credentials as fb_credentials
+from athena_logging import get_logger
 
+logger = get_logger(__name__)
 
 class ApiConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
@@ -20,22 +21,31 @@ class ApiConfig(AppConfig):
         if firebase_admin._apps:  # already initialized
             return
 
-        # Prefer explicit env var
-        cred_path = os.getenv("FIREBASE_CREDENTIALS", '/home/ironmeerkat/athena/athena-DRF/api/google-services.json')
-        if not cred_path:
-            # Fallback: try to find a single JSON key in the athena_drf directory
-            drf_dir = Path(settings.BASE_DIR) / "athena_drf"
-            json_keys = list(drf_dir.glob("*.json"))
-            if len(json_keys) == 1:
-                cred_path = str(json_keys[0])
+        # Resolve credentials path from environment
+        cred_path = os.getenv("FIREBASE_CREDENTIALS")
 
-        if cred_path and Path(cred_path).exists():
-            try:
+        try:
+            # 1) Service account JSON via explicit env var path
+            if cred_path and Path(cred_path).exists():
                 credentials = fb_credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(credentials)
-            except Exception:
-                # Silently continue; API views will raise on verification if misconfigured
-                pass
-        else:
-            # No credentials found; skip initialization
-            pass
+                logger.info(f"Initialized Firebase Admin with service account JSON at {cred_path}")
+                return
+
+            # 2) Application Default Credentials (ADC), e.g., GOOGLE_APPLICATION_CREDENTIALS, GCE/GKE metadata
+            try:
+                credentials = fb_credentials.ApplicationDefault()
+                firebase_admin.initialize_app(credentials, options={"projectId": "athena-5b322"})
+                logger.info("Initialized Firebase Admin with Application Default Credentials")
+                return
+            except Exception as adc_error:
+                logger.warning(f"Application Default Credentials not available: {adc_error}")
+
+            # 3) Let SDK attempt default discovery without explicit credentials
+            firebase_admin.initialize_app()
+            logger.info("Initialized Firebase Admin using default environment configuration")
+        except Exception:
+            logger.exception(
+                "Failed to initialize Firebase Admin. Set FIREBASE_CREDENTIALS or "
+                "GOOGLE_APPLICATION_CREDENTIALS to a valid service account JSON path."
+            )

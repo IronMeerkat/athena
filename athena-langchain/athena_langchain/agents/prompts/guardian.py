@@ -25,6 +25,7 @@ classify_prompt = ChatPromptTemplate.from_messages([
             "strictness={strictness}\n"
             "timeblock_goal={timeblock_goal}\n"
             "host={host}\n"
+            "app={app}\n"
             "path={path}\n"
             "activity={activity}\n"
             "title={title}"

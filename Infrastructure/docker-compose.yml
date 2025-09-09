@@ -109,6 +109,7 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
+      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/athena-5b322.json}
     networks:
       - athena
 
@@ -132,6 +133,7 @@ services:
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
+      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/athena-5b322.json}
     networks:
       - athena
 
