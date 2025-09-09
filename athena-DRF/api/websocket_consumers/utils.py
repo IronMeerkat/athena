@@ -10,10 +10,9 @@ from django.conf import settings
 from celery import current_app as celery_app
 from kombu import Connection, Exchange, Queue
 
-import logging
+from athena_logging import get_logger
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 
 class BaseConsumer(AsyncWebsocketConsumer):

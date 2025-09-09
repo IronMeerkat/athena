@@ -13,9 +13,8 @@ from __future__ import annotations
 import os
 from kombu import Exchange, Queue
 from celery import Celery
-
-import logging
-
+from celery.signals import setup_logging as celery_setup_logging
+from athena_logging import configure_logging
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "athena_drf.settings")
 
@@ -29,6 +28,20 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # Autodiscover tasks defined in any installed app.  You can create
 # ``tasks.py`` in your apps (including api) and Celery will find them.
 app.autodiscover_tasks()
+# Ensure Celery does not override our root logger configuration
+app.conf.worker_hijack_root_logger = False
+
+
+# Configure logging for worker processes using Athena's logger
+@celery_setup_logging.connect  # type: ignore[misc]
+def _configure_celery_logging(**kwargs):  # noqa: D401
+    # Reconfigure each time Celery initializes logging (main and child procs)
+    configure_logging(force=True)
+
+
+# Also configure at import time so early imports use our logger
+configure_logging()
+
 
 
 # Define Celery task routes

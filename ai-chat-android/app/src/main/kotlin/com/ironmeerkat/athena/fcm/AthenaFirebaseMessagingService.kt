@@ -12,18 +12,32 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.ironmeerkat.athena.MainActivity
 import com.ironmeerkat.athena.R
+import com.ironmeerkat.athena.api.auth.PushTokenStore
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Listens for Firebase Cloud Messaging events and surfaces them to the user.
  * - Logs new registration tokens.
  * - Handles data-only messages and shows a notification when appropriate.
  */
+@AndroidEntryPoint
 class AthenaFirebaseMessagingService : FirebaseMessagingService() {
+
+  @Inject lateinit var pushTokenStore: PushTokenStore
 
   override fun onNewToken(token: String) {
     try {
       Log.i(TAG, "FCM new token: $token")
-      // TODO: Optionally send token to backend for targeted notifications.
+      // Persist token so requests can include it for targeted notifications.
+      // We cannot block here; offload to a thread.
+      kotlin.runCatching {
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+          pushTokenStore.saveToken(token)
+        }
+      }.onFailure { t ->
+        Log.e(TAG, "Failed to store FCM token", t)
+      }
     } catch (t: Throwable) {
       Log.e(TAG, "Error handling new FCM token", t)
     }

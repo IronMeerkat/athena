@@ -8,7 +8,9 @@ from django.http import HttpRequest
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from athena_logging import get_logger
 
+logger = get_logger(__name__)
 class DeviceAttemptView(APIView):
     """POST /api/device/attempt
 
@@ -19,16 +21,10 @@ class DeviceAttemptView(APIView):
     """
 
     def post(self, request: HttpRequest) -> Response:  # type: ignore[override]
-        print(f"DeviceAttemptView: {request.data}")
-        data = request.data or {}
+        logger.info(f"DeviceAttemptView: {request.data}")
+        data = request.data
+        # Accept missing event_id by generating one
         event_id = data.get("event_id") or str(uuid.uuid4())
-        attempt = {
-            "device_id": data.get("device_id"),
-            "app": data.get("app"),
-            "url": data.get("url"),
-            "ts": data.get("ts"),
-            "event_id": event_id,
-        }
 
         # Route owner attempts to sensitive by default; guests to public
         queue = "sensitive"
@@ -42,18 +38,17 @@ class DeviceAttemptView(APIView):
             "metadata": {"event_id": event_id},
         }
 
-        run_id = event_id
         celery_app.send_task(
             "runs.execute_graph",
-            args=[run_id, "guardian", attempt, manifest],
+            args=[event_id, "guardian", {**data, "event_id": event_id}, manifest],
             queue=queue,
         )
 
         return Response(
             {
-                "run_id": run_id,
+                "run_id": event_id,
                 "decision": "pending",
-                "sse": f"/api/runs/{run_id}/events",
+                "sse": f"/api/runs/{event_id}/events",
             }
         )
 
@@ -66,10 +61,10 @@ class DevicePermitView(APIView):
     """
 
     def post(self, request: HttpRequest) -> Response:  # type: ignore[override]
-        data = request.data or {}
+        data = request.data
         ttl = max(0, int(data.get("ttl_minutes", 0)))
-        until = datetime.utcnow() + timedelta(minutes=ttl)
-        print(f"DevicePermitView: {data}")
+        until = datetime.now() + timedelta(minutes=ttl)
+        logger.info(f"DevicePermitView: {data}")
         # In a real impl, sign a permit token and notify device controller
         return Response(
             {

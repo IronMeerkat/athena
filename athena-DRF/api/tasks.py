@@ -16,6 +16,10 @@ from django.conf import settings
 
 from .notifications import send_fcm_message
 
+from athena_logging import get_logger
+
+logger = get_logger(__name__)
+
 
 @shared_task
 def example_background_task(x: int, y: int) -> int:
@@ -36,7 +40,7 @@ def dispatch_push(data: Dict[str, Any]) -> Dict[str, Any]:
 
     Expected data:
       {"target": "browser|android|all", "kind": "info|block_signal|unblock_signal",
-       "title": str, "body": str, "meta": {..}, "device_token": optional}
+       "title": str, "body": str, "meta": {..}, "device_id": optional}
     """
     target = str(data.get("target", "all"))
     kind = str(data.get("kind", "info"))
@@ -44,10 +48,11 @@ def dispatch_push(data: Dict[str, Any]) -> Dict[str, Any]:
     body = str(data.get("body", ""))
     meta = data.get("meta") or {}
     result: Dict[str, Any] = {"sent": []}
+    logger.info(f"Dispatching push: {data}")
 
     # Android via FCM (if configured)
     if target in ("android", "all"):
-        token = str(data.get("device_token", ""))
+        token = str(data.get('device_id') or "")
         if token:
             try:
                 send_fcm_message(token, {

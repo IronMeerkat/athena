@@ -17,6 +17,7 @@ Environment variables (optional):
   ATHENA_LOG_FORMAT  -> text | json
   ATHENA_LOG_SERVICE -> service name string
   ATHENA_LOG_FILE    -> absolute or relative log file path
+  ATHENA_LOG_COLOR   -> auto | always | never (console text format only)
 """
 
 from __future__ import annotations
@@ -130,6 +131,68 @@ class _JsonFormatter(Formatter):
         return json.dumps(base, ensure_ascii=False)
 
 
+class _ColorFormatter(Formatter):
+    """Minimal ANSI color formatter for console logs.
+
+    Colors only the level name, leaving the rest of the line intact.
+    Disabled automatically when not attached to a TTY unless forced.
+    """
+
+    RESET = "\033[0m"
+
+    LEVEL_TO_COLOR = {
+        DEBUG: "\033[36m",      # Cyan
+        INFO: "\033[32m",       # Green
+        WARNING: "\033[33m",    # Yellow
+        ERROR: "\033[31m",      # Red
+        CRITICAL: "\033[97;41m",  # White on red background
+    }
+
+    def __init__(self, *, fmt: str, datefmt: Optional[str], use_color: bool) -> None:
+        super().__init__(fmt=fmt, datefmt=datefmt)
+        self.use_color = use_color
+
+    def format(self, record) -> str:  # noqa: D401
+        if not self.use_color:
+            return super().format(record)
+
+        original_levelname = record.levelname
+        try:
+            color = self.LEVEL_TO_COLOR.get(record.levelno)
+            if color:
+                record.levelname = f"{color}{original_levelname}{self.RESET}"
+            return super().format(record)
+        finally:
+            record.levelname = original_levelname
+
+
+def _coerce_color_mode(value: Optional[str]) -> str:
+    if not value:
+        return "auto"
+    lowered = str(value).strip().lower()
+    return lowered if lowered in {"auto", "always", "never"} else "auto"
+
+
+def _should_colorize(mode: str, stream) -> bool:
+    if mode == "always":
+        return True
+    if mode == "never":
+        return False
+    # Respect NO_COLOR convention unless explicitly forced
+    if os.getenv("NO_COLOR") is not None:
+        return False
+    if os.getenv("TERM", "") == "dumb":
+        return False
+    try:
+        return bool(getattr(stream, "isatty", lambda: False)())
+    except Exception as exc:  # noqa: BLE001
+        try:
+            sys.stderr.write(f"athena_logging: TTY detection failed: {exc}\n")
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+
+
 def _ensure_parent_dir(path: Path) -> None:
     if not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -157,6 +220,7 @@ def configure_logging(
     env_format = os.getenv("ATHENA_LOG_FORMAT")
     env_service = os.getenv("ATHENA_LOG_SERVICE")
     env_file = os.getenv("ATHENA_LOG_FILE")
+    env_color = os.getenv("ATHENA_LOG_COLOR")
 
     effective_level = _coerce_level(level or env_level)
     use_json = (
@@ -175,10 +239,10 @@ def configure_logging(
 
     root = getLogger()
 
-    # Remove existing handlers when forcing reconfiguration
-    if force:
-        for handler in list(root.handlers):
-            root.removeHandler(handler)
+    # Remove any existing handlers to avoid duplicate logs from prior basicConfig
+    # or framework-added handlers (e.g., daphne, watchfiles).
+    for handler in list(root.handlers):
+        root.removeHandler(handler)
 
     root.setLevel(effective_level)
 
@@ -199,8 +263,10 @@ def configure_logging(
             "%(name)s:%(lineno)d - %(message)s"
         )
         datefmt = "%Y-%m-%dT%H:%M:%S%z"
+        color_mode = _coerce_color_mode(env_color)
+        use_color = _should_colorize(color_mode, sys.stdout)
         console_handler.setFormatter(
-            Formatter(fmt=fmt, datefmt=datefmt)
+            _ColorFormatter(fmt=fmt, datefmt=datefmt, use_color=use_color)
         )
     root.addHandler(console_handler)
 

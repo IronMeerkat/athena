@@ -21,7 +21,7 @@ class ApiConfig(AppConfig):
             return
 
         # Prefer explicit env var
-        cred_path = os.getenv("FIREBASE_CREDENTIALS")
+        cred_path = os.getenv("FIREBASE_CREDENTIALS", '/home/ironmeerkat/athena/athena-DRF/api/google-services.json')
         if not cred_path:
             # Fallback: try to find a single JSON key in the athena_drf directory
             drf_dir = Path(settings.BASE_DIR) / "athena_drf"

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Literal, Optional
+from typing import Optional
+from enum import StrEnum
 from pydantic import BaseModel
 from urllib.parse import urlparse
 
@@ -19,20 +20,30 @@ from athena_langchain.agents.utils import BaseFlow
 from athena_langchain.agents.prompts.guardian import classify_prompt
 
 
-import logging
+from athena_logging import get_logger
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
-Decision = Literal["allow", "nudge", "block", "appeal"]
-Classification = Literal["work", "neutral", "distraction", "unhealthy_habit"]
+class Decision(StrEnum):
+    ALLOW = "allow"
+    NUDGE = "nudge"
+    BLOCK = "block"
+    APPEAL = "appeal"
+
+
+class Classification(StrEnum):
+    WORK = "work"
+    NEUTRAL = "neutral"
+    DISTRACTION = "distraction"
+    UNHEALTHY_HABIT = "unhealthy_habit"
 
 
 class GuardianState(BaseModel, frozen=False):
     # Inputs
     event_id: str = ""
+    device_id: str = ""
     session_id: Optional[str] = None
-    url: str = ""
+    url: Optional[str] = None
     app: str = ""
     title: str = ""
 
@@ -45,10 +56,10 @@ class GuardianState(BaseModel, frozen=False):
     goal: str = ""
 
     # Classification
-    classification: Classification = "neutral"
+    classification: Classification = Classification.NEUTRAL
 
     # Output decision
-    decision: Decision = "allow"
+    decision: Decision = Decision.ALLOW
     permit_ttl: int = 0
     appeal_available: bool = False
     message: str = ""
@@ -64,17 +75,19 @@ class GuardianFlow(BaseFlow):
     model_name = "gpt-5-nano"
     temperature = 0.0
 
-    def build_graph( self, settings: Settings, llm: BaseChatModel) -> StateGraph:
+    def build_graph(self, settings: Settings, llm: BaseChatModel) -> StateGraph:
 
         def respond(state: GuardianState) -> GuardianState:
             celery_app.send_task(
                 "gateway.dispatch_push",
-                args=[state.model_dump()],
+                args=[state.model_dump(mode="json")],
                 queue="gateway",
             )
             return state
 
         def assemble(state: GuardianState) -> GuardianState:
+
+            logger.info(f"Assembling state: {state}")
             # Derive URL parts and Android hints
             url_value = state.url or ""
             parsed = urlparse(url_value)
@@ -108,7 +121,15 @@ class GuardianFlow(BaseFlow):
             })
 
             data = json.loads(out.content)
-            label: Classification = data.get("classification", "neutral")
+            try:
+                raw_label = data.get("classification", Classification.NEUTRAL.value)
+                label: Classification = Classification(raw_label)
+            except (ValueError, TypeError):
+                logger.warning(
+                    "Unknown classification %r; defaulting to NEUTRAL",
+                    data.get("classification"),
+                )
+                label = Classification.NEUTRAL
             return respond(state.model_copy(update={"classification": label}))
 
         def decide(state: GuardianState) -> GuardianState:
@@ -122,22 +143,22 @@ class GuardianFlow(BaseFlow):
                 "message": "",
             })
 
-            if label == "work":
-                updated = updated.model_copy(update={"decision": "allow"})
+            if label == Classification.WORK:
+                updated = updated.model_copy(update={"decision": Decision.ALLOW})
                 return respond(updated)
 
-            if label == "neutral":
+            if label == Classification.NEUTRAL:
                 if strict <= 3:
-                    updated = updated.model_copy(update={"decision": "allow"})
+                    updated = updated.model_copy(update={"decision": Decision.ALLOW})
                 elif strict <= 6:
                     updated = updated.model_copy(update={
-                        "decision": "nudge",
+                        "decision": Decision.NUDGE,
                         "permit_ttl": 2,
                         "message": "2 minutes, then back to focus?",
                     })
                 else:
                     updated = updated.model_copy(update={
-                        "decision": "block",
+                        "decision": Decision.BLOCK,
                         "appeal_available": True,
                     })
                 return respond(updated)
@@ -145,23 +166,23 @@ class GuardianFlow(BaseFlow):
             # distraction / unhealthy_habit
             if strict <= 2:
                 updated = updated.model_copy(update={
-                    "decision": "nudge",
+                    "decision": Decision.NUDGE,
                     "permit_ttl": 2,
                     "message": "2 minutes, then close?",
                 })
             elif strict <= 6:
                 updated = updated.model_copy(update={
-                    "decision": "block",
+                    "decision": Decision.BLOCK,
                     "appeal_available": True,
                 })
             elif strict <= 8:
                 updated = updated.model_copy(update={
-                    "decision": "appeal",
+                    "decision": Decision.APPEAL,
                     "appeal_available": True,
                 })
             else:
                 updated = updated.model_copy(update={
-                    "decision": "block",
+                    "decision": Decision.BLOCK,
                     "appeal_available": False,
                 })
             return respond(updated)

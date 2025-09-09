@@ -89,7 +89,6 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MOCK_MODE=${MOCK_MODE:-true}
     networks:
       - athena
 

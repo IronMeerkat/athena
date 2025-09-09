@@ -1,6 +1,13 @@
 {
     "java.configuration.updateBuildConfiguration": "automatic",
-    "python.languageServer": "None",
+    "python.languageServer": "Pylance",
     "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable",
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "python.defaultInterpreterPath": "/home/ironmeerkat/athena/.venv/bin/python",
+    "python.autoComplete.extraPaths": [
+        "/home/ironmeerkat/athena/athena-utils/src"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/ironmeerkat/athena/athena-utils/src"
+    ]
 }

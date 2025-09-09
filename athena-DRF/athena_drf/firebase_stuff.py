@@ -2,6 +2,7 @@ from rest_framework.authentication import BaseAuthentication
 from firebase_admin import auth as fb_auth
 from django.contrib.auth import get_user_model
 
+
 class FirebaseAuthentication(BaseAuthentication):
     def authenticate(self, request):
         header = request.META.get("HTTP_AUTHORIZATION", "")

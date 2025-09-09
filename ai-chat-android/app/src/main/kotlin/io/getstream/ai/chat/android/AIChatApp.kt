@@ -26,6 +26,8 @@ import com.ironmeerkat.athena.fcm.AthenaFirebaseMessagingService
 import androidx.core.content.ContextCompat
 import android.content.Intent
 import com.ironmeerkat.athena.digitalwellbeing.service.AppMonitorForegroundService
+import com.google.firebase.messaging.FirebaseMessaging
+import dagger.hilt.android.EntryPointAccessors
 
 @HiltAndroidApp
 class AIChatApp : Application() {
@@ -57,6 +59,20 @@ class AIChatApp : Application() {
     } catch (t: Throwable) {
       // Never swallow silently; always log
       StreamLog.getLogger("AIChatApp").e(t) { "Failed to start AppMonitorForegroundService at app start" }
+    }
+
+    // Ensure we have an up-to-date FCM token persisted
+    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+      if (task.isSuccessful) {
+        val token = task.result
+        if (!token.isNullOrBlank()) {
+          val entryPoint = EntryPointAccessors.fromApplication(this, com.ironmeerkat.athena.di.AppEntryPoint::class.java)
+          val store = entryPoint.pushTokenStore()
+          kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { store.saveToken(token) }
+        }
+      } else {
+        StreamLog.getLogger("AIChatApp").e(task.exception) { "Failed to get FCM token" }
+      }
     }
   }
 }

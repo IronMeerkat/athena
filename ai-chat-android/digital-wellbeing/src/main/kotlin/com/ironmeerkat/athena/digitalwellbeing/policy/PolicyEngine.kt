@@ -8,6 +8,7 @@ import com.ironmeerkat.athena.digitalwellbeing.db.RuleDao
 import com.ironmeerkat.athena.digitalwellbeing.db.StateDao
 import com.ironmeerkat.athena.digitalwellbeing.db.StateEntity
 import com.ironmeerkat.athena.api.AthenaService
+import com.ironmeerkat.athena.api.auth.PushTokenStore
 import com.ironmeerkat.athena.api.dto.DeviceAttemptRequest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +37,7 @@ class PolicyEngine @Inject constructor(
   private val stateDao: StateDao,
   private val athenaService: AthenaService,
   private val decisionCache: DecisionCache,
+  private val pushTokenStore: PushTokenStore,
   @Dispatcher(AIChatDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) {
   private val statePauseKey = "off" // values: off|soft|hard
@@ -89,8 +91,10 @@ class PolicyEngine @Inject constructor(
 
     // Remote guardian check via DRF
     try {
+      val token = pushTokenStore.getToken()
       val req = DeviceAttemptRequest(
-          deviceId = getDeviceId(),
+          deviceId = if (token.isNotBlank()) token else "unknown",
+          eventId = java.util.UUID.randomUUID().toString(),
           url = target.url,
           app = target.appPackage,
           title = target.toString(),

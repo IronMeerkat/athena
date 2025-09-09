@@ -11,7 +11,7 @@ here to instantiate and run LangChain graphs.
 
 from __future__ import annotations
 
-import logging
+from athena_logging import get_logger
 from typing import Any, Dict
 
 from celery import shared_task
@@ -22,8 +22,7 @@ from ..registry import PUBLIC_AGENTS, SENSITIVE_AGENTS
 from ..agents import __init__ as _agents_imports  # noqa: F401  # ensure registration side-effects
 from kombu import Connection, Exchange, Producer
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 
 @shared_task(bind=True, name="runs.execute_graph")
@@ -83,8 +82,9 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
                 with conn.channel() as channel:
                     producer = Producer(channel)
                     producer.publish({"event": event, "data": data}, exchange=exchange, routing_key=routing_key, serializer="json", declare=[exchange])
-        except Exception:
-            pass
+        except Exception as e:
+            # Best-effort publishing; do not fail the run on stream errors
+            logger.exception(f"Failed to publish event {event} for run {run_id}")
 
 
     try:
@@ -95,7 +95,9 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
             meta = cap.metadata or {}
             if meta.get("session_id") and not enriched.get("session_id"):
                 enriched["session_id"] = meta.get("session_id")
+            logger.info(f"Enriched payload: {enriched}")
         except Exception:
+            logger.exception("Error enriching payload")
             enriched = payload or {}
 
         result = runnable.invoke(enriched)

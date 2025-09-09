@@ -13,7 +13,9 @@ from __future__ import annotations
 import os
 
 from celery import Celery
+from celery.signals import setup_logging as celery_setup_logging
 from dotenv import load_dotenv
+from athena_logging import configure_logging
 
 # Load environment variables from a .env file if present.  This allows
 # customizing the broker URL, result backend and other options without
@@ -36,6 +38,18 @@ app.config_from_object({
     "worker_prefetch_multiplier": 1,
     "timezone": os.getenv("CELERY_TIMEZONE", "America/New_York"),
 })
+
+# Prevent Celery from hijacking the root logger; we configure it ourselves
+app.conf.worker_hijack_root_logger = False
+
+
+@celery_setup_logging.connect  # type: ignore[misc]
+def _configure_celery_logging(**kwargs):  # noqa: D401
+    configure_logging(force=True)
+
+
+# Also configure at import time for early logs
+configure_logging()
 
 # Autodiscover tasks from the ``tasks`` package.  Celery will import any
 # ``tasks.py`` modules found within ``athena_langchain`` and its

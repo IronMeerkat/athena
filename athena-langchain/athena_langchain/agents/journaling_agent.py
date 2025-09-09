@@ -15,10 +15,9 @@ from athena_langchain.memory.chat_history import (
 )
 from athena_langchain.celery import app as celery_app
 
-import logging
+from athena_logging import get_logger
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 
 class AgentState(BaseModel, frozen=False):

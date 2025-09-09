@@ -22,7 +22,7 @@ from athena_langchain.tools.policies import (  # noqa: F401
     __init__ as _policy_tools,
 )
 from celery.result import AsyncResult
-import logging
+from athena_logging import get_logger
 import sys
 
 logging.basicConfig(

@@ -10,6 +10,9 @@ from typing import Any, Dict
 import firebase_admin
 from firebase_admin import messaging
 
+from athena_logging import get_logger
+
+logger = get_logger(__name__)
 
 def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
     """
@@ -19,6 +22,7 @@ def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
     :param data: Dict that may include 'title' and 'body' plus custom fields.
     :return: The message ID string from FCM.
     """
+    logger.info(f"Sending FCM message to {token} with data {data}")
     if not firebase_admin._apps:
         raise RuntimeError(
             "Firebase Admin is not initialized. Set FIREBASE_CREDENTIALS to the "
@@ -29,6 +33,7 @@ def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
     body = data.get("body")
     notif = messaging.Notification(title=str(title) if title else None,
                                    body=str(body) if body else None)
+    logger.info(f"Notification: {notif}")
 
     # FCM data payload must be str->str
     payload = {
@@ -42,4 +47,5 @@ def send_fcm_message(token: str, data: Dict[str, Any]) -> str:
         notification=notif if (title or body) else None,
         data=payload if payload else None,
     )
+    logger.info(f"Message: {message}")
     return messaging.send(message)

@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM athena-infrastructure-base:latest
 
 # Copy requirements first to leverage Docker cache
 WORKDIR /app
