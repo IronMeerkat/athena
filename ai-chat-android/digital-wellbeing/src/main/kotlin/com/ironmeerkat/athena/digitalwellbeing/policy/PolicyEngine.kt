@@ -26,6 +26,7 @@ sealed class PolicyDecision(val allow: Boolean) {
 data class Target(
   val appPackage: String?,
   val url: String?,
+  val title: String?,
 ) {
   override fun toString(): String = url ?: appPackage ?: "unknown"
 }
@@ -97,7 +98,7 @@ class PolicyEngine @Inject constructor(
           eventId = java.util.UUID.randomUUID().toString(),
           url = target.url,
           app = target.appPackage,
-          title = target.toString(),
+          title = target.title,
           ts = System.currentTimeMillis().toString(),
       )
       val resp = athenaService.deviceAttempt(req)

@@ -13,6 +13,10 @@ import com.google.firebase.messaging.RemoteMessage
 import com.ironmeerkat.athena.MainActivity
 import com.ironmeerkat.athena.R
 import com.ironmeerkat.athena.api.auth.PushTokenStore
+import com.ironmeerkat.athena.digitalwellbeing.policy.GuardianResultHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -25,6 +29,7 @@ import javax.inject.Inject
 class AthenaFirebaseMessagingService : FirebaseMessagingService() {
 
   @Inject lateinit var pushTokenStore: PushTokenStore
+  @Inject lateinit var guardianResultHandler: GuardianResultHandler
 
   override fun onNewToken(token: String) {
     try {
@@ -32,7 +37,7 @@ class AthenaFirebaseMessagingService : FirebaseMessagingService() {
       // Persist token so requests can include it for targeted notifications.
       // We cannot block here; offload to a thread.
       kotlin.runCatching {
-        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        GlobalScope.launch(Dispatchers.IO) {
           pushTokenStore.saveToken(token)
         }
       }.onFailure { t ->
@@ -45,19 +50,26 @@ class AthenaFirebaseMessagingService : FirebaseMessagingService() {
 
   override fun onMessageReceived(message: RemoteMessage) {
     try {
-      val title = message.notification?.title
-        ?: message.data["title"]
-        ?: DEFAULT_TITLE
-      val body = message.notification?.body
-        ?: message.data["body"]
-        ?: message.data["message"]
-        ?: ""
+      val notifTitle = message.notification?.title ?: DEFAULT_TITLE
+      val notifBody = message.notification?.body ?: ""
+      val source = message.data["source"]
+      val result = message.data["result"] // typically looks like the Agent State model
 
-      if (body.isNotBlank()) {
-        showNotification(title, body)
-      } else {
-        Log.d(TAG, "Received FCM message with empty body; data=${message.data}")
+      if (source == "guardian") {
+        if (!result.isNullOrBlank()) {
+          try {
+            guardianResultHandler.handleGuardianResult(result)
+          } catch (t: Throwable) {
+            Log.e(TAG, "Failed to dispatch guardian result to handler", t)
+          }
+        }
       }
+
+      // if (body.isNotBlank()) {
+      //   showNotification(title, body)
+      // } else {
+      //   Log.d(TAG, "Received FCM message with empty body; data=${message.data}")
+      // }
     } catch (t: Throwable) {
       Log.e(TAG, "Error handling FCM message", t)
     }

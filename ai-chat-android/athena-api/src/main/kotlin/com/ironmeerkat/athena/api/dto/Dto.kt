@@ -58,7 +58,7 @@ data class CreateRunResponse(
 data class DeviceAttemptRequest(
   @SerialName("device_id") val deviceId: String,
   @SerialName("event_id") val eventId: String? = null,
-  val title: String = "",
+  val title: String? = null,
   val url: String? = null,
   val app: String? = null,
   val ts: String? = System.currentTimeMillis().toString(),

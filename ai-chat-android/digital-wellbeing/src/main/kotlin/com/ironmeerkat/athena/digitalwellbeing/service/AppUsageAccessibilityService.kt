@@ -25,15 +25,21 @@ class AppUsageAccessibilityService : AccessibilityService() {
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     if (event == null) return
     if (
-      event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
-      event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED ||
-      event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
-      event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
-      event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED
+      event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+      // || event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED
+      // || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+      // || event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED
+      // || event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED
+      // || event.eventType == AccessibilityEvent.TYPE_VIEW_LONG_CLICKED
+      // || event.eventType == AccessibilityEvent.TYPE_VIEW_SELECTED
+      // || event.eventType == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER
+      // || event.eventType == AccessibilityEvent.TYPE_VIEW_HOVER_EXIT
+
     ) {
       val pkg = event.packageName?.toString()
       val url = extractUrlFromEvent(event)
-      val target = Target(appPackage = pkg, url = url)
+      val title = event.text?.joinToString(" ") ?: url
+      val target = Target(appPackage = pkg, url = url, title = title)
       Timber.d("onAccessibilityEvent: type=%d pkg=%s url=%s", event.eventType, pkg, url)
       scope.launch {
         try {

@@ -28,6 +28,7 @@ import android.content.Intent
 import com.ironmeerkat.athena.digitalwellbeing.service.AppMonitorForegroundService
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class AIChatApp : Application() {
