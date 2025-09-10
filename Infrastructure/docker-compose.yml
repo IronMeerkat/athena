@@ -69,11 +69,11 @@ services:
       - athena
 
 
-  # athena-langchain-public:
-  #   build: ../athena-langchain
-  #   command: ["bash", "-c", "celery -A athena_langchain.celery worker -Q public -n public_worker@%h --concurrency=1"]
+  # polymetis-public:
+  #   build: ../polymetis
+  #   command: ["bash", "-c", "celery -A polymetis.celery worker -Q public -n public_worker@%h --concurrency=1"]
   #   volumes:
-  #     - ../athena-langchain:/app
+  #     - ../polymetis:/app
   #   depends_on:
   #     - rabbitmq
   #     - redis
@@ -90,11 +90,11 @@ services:
   #   networks:
   #     - athena
 
-  athena-langchain-sensitive:
-    build: ../athena-langchain
-    command: ["bash", "-c", "watchfiles --filter python 'celery -A athena_langchain.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1 --pool=solo' /app"]
+  polymetis-sensitive:
+    build: ../polymetis
+    command: ["bash", "-c", "watchfiles --filter python 'celery -A polymetis.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1 --pool=solo' /app"]
     volumes:
-      - ../athena-langchain:/app
+      - ../polymetis:/app
     depends_on:
       - rabbitmq
       - redis
@@ -113,11 +113,11 @@ services:
     networks:
       - athena
 
-  athena-drf-worker:
-    build: ../athena-DRF
-    command: ["bash", "-c", "watchfiles --filter python 'celery -A athena_drf.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo' /app"]
+  aegis-worker:
+    build: ../aegis
+    command: ["bash", "-c", "watchfiles --filter python 'celery -A aegis.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo' /app"]
     volumes:
-      - ../athena-DRF:/app
+      - ../aegis:/app
     depends_on:
       - rabbitmq
       - redis
@@ -134,18 +134,18 @@ services:
     networks:
       - athena
 
-  athena-drf:
-    build: ../athena-DRF
-    command: ["bash", "-c", "python manage.py makemigrations && python manage.py migrate && watchfiles --filter python 'daphne -b 0.0.0.0 -p 8000 athena_drf.asgi:application' /app"]
+  aegis:
+    build: ../aegis
+    command: ["bash", "-c", "python manage.py makemigrations && python manage.py migrate && watchfiles --filter python 'daphne -b 0.0.0.0 -p 8000 aegis.asgi:application' /app"]
     volumes:
-      - ../athena-DRF:/app
+      - ../aegis:/app
     ports:
       - "8000:8000"
     depends_on:
       - rabbitmq
       - redis
       - postgres
-      - athena-drf-worker
+      - aegis-worker
     env_file:
       - ../.env
     environment:

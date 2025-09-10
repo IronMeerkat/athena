@@ -4,7 +4,7 @@
         {
             "label": "compose: up (debug)",
             "type": "shell",
-            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml up -d --build athena-drf athena-drf-worker athena-langchain-sensitive",
+            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml up -d --build aegis aegis-worker polymetis-sensitive",
             "problemMatcher": []
         },
         {
@@ -16,7 +16,7 @@
         {
             "label": "logs: drf",
             "type": "shell",
-            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml logs -f athena-drf | cat",
+            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml logs -f aegis | cat",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "custom",
@@ -36,7 +36,7 @@
         {
             "label": "logs: drf-worker",
             "type": "shell",
-            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml logs -f athena-drf-worker | cat",
+            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml logs -f aegis-worker | cat",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "custom",
@@ -56,7 +56,7 @@
         {
             "label": "logs: langchain",
             "type": "shell",
-            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml logs -f athena-langchain-sensitive | cat",
+            "command": "docker compose -f /home/ironmeerkat/athena/Infrastructure/docker-compose.yml -f /home/ironmeerkat/athena/Infrastructure/docker-compose.debug.yml logs -f polymetis-sensitive | cat",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "custom",

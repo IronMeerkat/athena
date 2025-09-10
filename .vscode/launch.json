@@ -15,7 +15,7 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "/home/ironmeerkat/athena-DRF",
+                    "localRoot": "/home/ironmeerkat/aegis",
                     "remoteRoot": "/app"
                 }
             ],
@@ -32,7 +32,7 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "/home/ironmeerkat/athena-DRF",
+                    "localRoot": "/home/ironmeerkat/aegis",
                     "remoteRoot": "/app"
                 }
             ],
@@ -49,7 +49,7 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "/home/ironmeerkat/athena-langchain",
+                    "localRoot": "/home/ironmeerkat/polymetis",
                     "remoteRoot": "/app"
                 }
             ],

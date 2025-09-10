@@ -4,4 +4,4 @@ globs:
 alwaysApply: true
 ---
 
-- Athena-DRF is the traffic cop, nobody ever talks to her agents except via the DRF.
+- Aegis is the traffic cop, nobody ever talks to her agents except via the DRF.
