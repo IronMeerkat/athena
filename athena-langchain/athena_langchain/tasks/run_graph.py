@@ -104,24 +104,38 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
             enriched = payload or {}
 
         result = runnable.invoke(enriched)
-        # logger.info(f"result: {result}")
         result = result or True
-        # forward assistant text if present
-        if isinstance(result, dict):
-            assistant = result.get("assistant") or ""
-            if isinstance(assistant, str) and assistant:
-                publish("assistant", {"assistant": assistant})
-            # If agent provided a history snapshot (e.g., on disconnect), forward it
-            history_snapshot = result.get("history_snapshot")
-            if history_snapshot:
-                publish("history_snapshot", history_snapshot)
-        publish("run_completed", result)
+
+        # Normalize to a plain dict for publishing; strip non-serializable fields
+        def to_plain(obj: Any) -> Dict[str, Any]:
+            try:
+                if hasattr(obj, "model_dump"):
+                    return obj.model_dump()  # type: ignore[attr-defined]
+                if isinstance(obj, dict):
+                    return obj
+                return {"assistant": str(obj)}
+            except Exception:
+                return {"assistant": str(obj)}
+
+        plain = to_plain(result)
+        assistant = plain.get("assistant") or ""
+        if isinstance(assistant, str) and assistant:
+            publish("assistant", {"assistant": assistant})
+        history_snapshot = plain.get("history_snapshot")
+        if isinstance(history_snapshot, dict):
+            publish("history_snapshot", history_snapshot)
+        # Only include safe keys in run_completed
+        safe_completed = {"assistant": assistant}
+        if isinstance(history_snapshot, dict):
+            safe_completed["history_snapshot"] = history_snapshot
+        publish("run_completed", safe_completed)
 
         return {
             "status": "ok",
             "run_id": run_id,
             "agent_id": agent_id,
-            "result": result,
+            # Return only plain, JSON-serializable result
+            "result": safe_completed,
             "ack": True,
         }
     except Exception as e:  # noqa: BLE001

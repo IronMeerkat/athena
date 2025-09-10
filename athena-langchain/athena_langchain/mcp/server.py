@@ -80,7 +80,7 @@ def _validate_required(schema: Dict[str, Any] | None, args: Dict[str, Any]) -> N
 
 
 @server.list_tools()
-async def handle_list_tools(_req: ListToolsRequest) -> list[Tool]:
+async def handle_list_tools(_req: ListToolsRequest | None = None) -> list[Tool]:
     # Agent surface
     logger.info("list_tools requested")
     tools: list[Tool] = [

@@ -6,7 +6,20 @@ from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+# Be robust to mis-typed/bytes envs in sub-processes (e.g., MCP server child)
+if isinstance(DATABASE_URL, bytes):
+    try:
+        DATABASE_URL = DATABASE_URL.decode("utf-8")
+    except Exception:
+        DATABASE_URL = None  # fall back below
+
+if not DATABASE_URL or not isinstance(DATABASE_URL, str):
+    # Default for local/dev compose
+    DATABASE_URL = "postgresql://athena:athena@localhost:5432/athena"
+
 db_parsed = urlparse.urlparse(DATABASE_URL)
+# In rare cases of bytes from urlparse (if input was bytes), coerce fields
+path_part = db_parsed.path if isinstance(db_parsed.path, str) else str(db_parsed.path or b"")
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
@@ -22,7 +35,7 @@ class Settings(BaseSettings):
     # Postgres
     postgres_host: str = db_parsed.hostname or "localhost"
     postgres_port: int = db_parsed.port or 5432
-    postgres_db: str = db_parsed.path.lstrip("/")
+    postgres_db: str = path_part.lstrip("/")
     postgres_user: str = db_parsed.username or ""
     postgres_password: str = db_parsed.password or ""
 
