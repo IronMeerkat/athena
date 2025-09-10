@@ -104,7 +104,7 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
             enriched = payload or {}
 
         result = runnable.invoke(enriched)
-        logger.info(f"result: {result}")
+        # logger.info(f"result: {result}")
         result = result or True
         # forward assistant text if present
         if isinstance(result, dict):
