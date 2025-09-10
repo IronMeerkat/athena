@@ -19,6 +19,7 @@ from celery import shared_task
 from ..manifest import CapabilityManifest
 from ..config import Settings
 from ..registry import PUBLIC_AGENTS, SENSITIVE_AGENTS
+from ..memory.vectorstore import create_memory_deps
 from ..agents import __init__ as _agents_imports  # noqa: F401  # ensure registration side-effects
 from kombu import Connection, Exchange, Producer
 
@@ -68,7 +69,9 @@ def run_graph(self, run_id: str, agent_id: str, payload: Any, manifest: Dict[str
     # Build the agent graph and run it
     settings = Settings()
     llm = registry.build_llm(settings, agent_id)
-    graph = entry.build_graph(settings, llm)
+    # Centralize vector memory dependencies
+    memory = create_memory_deps(settings)
+    graph = entry.build_graph(settings, llm, memory)
     runnable = graph.compile()
 
     # Prepare RabbitMQ event publisher for streaming

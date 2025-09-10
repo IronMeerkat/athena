@@ -20,6 +20,10 @@ classify_prompt = ChatPromptTemplate.from_messages([
         ),
     ),
     (
+        "system",
+        "Optional external CONTEXT (may be empty):\n{context}",
+    ),
+    (
         "human",
         (
             "strictness={strictness}\n"
@@ -47,6 +51,10 @@ appeals_prompt = ChatPromptTemplate.from_messages([
             "\"minutes\":number}. "
             "If allowing, minutes should be minimal (1-60)."
         ),
+    ),
+    (
+        "system",
+        "Optional external CONTEXT (may be empty):\n{context}",
     ),
     (
         "system",

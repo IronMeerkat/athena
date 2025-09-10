@@ -25,3 +25,5 @@ mcp>=0.1.0
 ## Hot-reload helpers for Celery (filesystem changes)
 watchdog>=3.0
 watchfiles>=0.21
+## MongoDB client
+pymongo>=4.8

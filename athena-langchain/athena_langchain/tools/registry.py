@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Iterator, Tuple
 
 
 @dataclass
@@ -28,6 +28,9 @@ class ToolRegistry:
             raise KeyError(f"Unknown tool: {name}")
         _, func = self._tools[name]
         return func(args or {})
+
+    def __call__(self, name: str, args: Optional[dict] = None) -> Any:
+        return self.call(name, args)
 
     def list(self) -> Dict[str, ToolSpec]:
         return {k: v[0] for k, v in self._tools.items()}

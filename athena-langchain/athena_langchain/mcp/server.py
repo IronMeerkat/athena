@@ -21,17 +21,13 @@ from athena_langchain.tools.registry import SENSITIVE_TOOLS, PUBLIC_TOOLS
 from athena_langchain.tools.policies import (  # noqa: F401
     __init__ as _policy_tools,
 )
+# Ensure mongo tool registers on import
+from athena_langchain.tools import mongo_admin  # noqa: F401
 from celery.result import AsyncResult
 from athena_logging import get_logger
 import sys
 
-logging.basicConfig(
-    stream=sys.stderr,
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
-logger = logging.getLogger("athena_mcp")
-
+logger = get_logger(__name__)
 
 def _json(v: Any) -> str:
     try:
@@ -41,6 +37,46 @@ def _json(v: Any) -> str:
 
 
 server = Server("athena-langchain")
+
+
+# Per-run capability context for allowlisting tools/agents.
+# Seeded when a run is initiated and consulted by tools.list/tools.call/policy.*
+RUN_CONTEXTS: dict[str, dict[str, Any]] = {}
+
+
+def _seed_run_context(run_id: str, manifest: Dict[str, Any]) -> None:
+
+    agent_ids = manifest["agent_ids"]
+    tool_ids = manifest["tool_ids"]
+    queue = manifest.get("queue", "public")
+
+    RUN_CONTEXTS[run_id] = {
+        "agent_ids": agent_ids,
+        "tool_ids": tool_ids,
+        "queue": queue,
+    }
+    logger.info(
+        "Seeded run context: run_id=%s agents=%s tools=%s queue=%s",
+        run_id,
+        agent_ids,
+        tool_ids,
+        queue,
+    )
+
+
+def _get_run_context(run_id: str) -> Dict[str, Any] | None:
+    return RUN_CONTEXTS.get(run_id)
+
+
+def _validate_required(schema: Dict[str, Any] | None, args: Dict[str, Any]) -> None:
+    """Minimal JSON-schema 'required' validator."""
+    if not schema:
+        return
+
+    missing = [k for k in schema['required'] if k not in args]
+    if missing:
+        logger.error("Missing required argument(s): %s", ", ".join(missing))
+        raise ValueError(f"Missing required argument(s): {', '.join(missing)}")
 
 
 @server.list_tools()
@@ -147,14 +183,22 @@ async def handle_list_tools(_req: ListToolsRequest) -> list[Tool]:
         # Tool registry passthrough
         Tool(
             name="tools.list",
-            description="List registered tools (public and sensitive)",
-            inputSchema={"type": "object"},
+            description=(
+                "List registered tools (public and sensitive). "
+                "Optional: {run_id} to filter to the current run's allowlist."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "run_id": {"type": "string"},
+                },
+            },
         ),
         Tool(
             name="tools.call",
             description=(
                 "Call a registered tool by name. "
-                "Input: {name, args?, scope?=sensitive|public}"
+                "Input: {name, args?, scope?=sensitive|public, run_id?}"
             ),
             inputSchema={
                 "type": "object",
@@ -165,6 +209,7 @@ async def handle_list_tools(_req: ListToolsRequest) -> list[Tool]:
                         "type": "string",
                         "enum": ["public", "sensitive"],
                     },
+                    "run_id": {"type": "string"},
                 },
                 "required": ["name"],
             },
@@ -201,11 +246,14 @@ async def handle_call_tool(req: CallToolRequest) -> list[TextContent]:
             )
         ]
     if name == "runs.execute":
-        run_id = str(params.get("run_id", ""))
-        agent_id = str(params.get("agent_id", ""))
-        payload = params.get("payload")
-        manifest = params.get("manifest") or {}
-        queue = str(manifest.get("queue", "public"))
+        # Strict parameter access; raise on missing/wrong types
+        run_id = params["run_id"]
+        agent_id = params["agent_id"]
+        payload = params["payload"]
+        manifest = params.get("manifest") or {"queue": "sensitive"}
+        queue = manifest.get("queue", "sensitive")
+        # Ignore allowlists/manifests by request; still seed minimal context
+        _seed_run_context(run_id, manifest)
         # Execute synchronously and return result
         out = await asyncio.to_thread(
             lambda: run_graph.apply_async(
@@ -226,11 +274,12 @@ async def handle_call_tool(req: CallToolRequest) -> list[TextContent]:
         ]
 
     if name == "runs.execute_async":
-        run_id = str(params.get("run_id", ""))
-        agent_id = str(params.get("agent_id", ""))
-        payload = params.get("payload")
-        manifest = params.get("manifest") or {}
-        queue = str(manifest.get("queue", "public"))
+        run_id = params["run_id"]
+        agent_id = params["agent_id"]
+        payload = params["payload"]
+        manifest = params.get("manifest") or {"queue": "sensitive"}
+        queue = manifest.get("queue", "sensitive")
+        _seed_run_context(run_id, manifest)
         async_res = await asyncio.to_thread(
             lambda: run_graph.apply_async(
                 kwargs={
@@ -250,7 +299,7 @@ async def handle_call_tool(req: CallToolRequest) -> list[TextContent]:
         ]
 
     if name == "runs.status":
-        task_id = str(params.get("task_id", ""))
+        task_id = params["task_id"]
         ar = AsyncResult(task_id)
         payload: Dict[str, Any] = {"state": ar.state, "ready": ar.ready()}
         if ar.successful():
@@ -264,21 +313,22 @@ async def handle_call_tool(req: CallToolRequest) -> list[TextContent]:
             )
         ]
 
-    if name.startswith("policy."):
-        # Route to tool registry to avoid duplicating Celery tasks
+    if name.startswith("policy.") or name.startswith("agents.") or name.startswith("mongo."):
+        # Route to tool registry; ignore allowlists for now
         reg = SENSITIVE_TOOLS
-        try:
-            res = reg.call(name, params)
-        except (KeyError, ValueError, TypeError) as e:
-            res = {"error": str(e)}
-        return [
-            TextContent(
-                type="text",
-                text=_json(res),
-            )
-        ]
+        specs = reg.list()
+        spec = specs.get(name)
+        if not spec:
+            logger.error("Unknown tool: %s", name)
+            raise KeyError(f"Unknown tool: {name}")
+        # Minimal required-keys validation
+        _validate_required(spec.schema, params)
+        res = reg.call(name, params)
+        return [TextContent(type="text", text=_json(res))]
 
     if name == "tools.list":
+        # Optional run_id filtering
+        run_id_filter = params.get("run_id")
         pub = {k: v.description for k, v in PUBLIC_TOOLS.list().items()}
         sen = {k: v.description for k, v in SENSITIVE_TOOLS.list().items()}
         return [
@@ -288,14 +338,17 @@ async def handle_call_tool(req: CallToolRequest) -> list[TextContent]:
             )
         ]
     if name == "tools.call":
-        tool_name = str(params.get("name", ""))
-        scope = str(params.get("scope", "sensitive"))
-        args = params.get("args") or {}
+        tool_name = params["name"]
+        scope = params.get("scope", "sensitive")
+        args = params.get("args", {})
         reg = PUBLIC_TOOLS if scope == "public" else SENSITIVE_TOOLS
-        try:
-            res = reg.call(tool_name, args)
-        except (KeyError, ValueError, TypeError) as e:
-            res = {"error": str(e)}
+        specs = reg.list()
+        spec = specs.get(tool_name)
+        if not spec:
+            logger.error("Unknown tool: %s", tool_name)
+            raise KeyError(f"Unknown tool: {tool_name}")
+        _validate_required(spec.schema, args)
+        res = reg.call(tool_name, args)
         return [TextContent(type="text", text=_json(res))]
 
     return [

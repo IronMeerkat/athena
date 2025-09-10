@@ -7,6 +7,7 @@ from langgraph.graph import StateGraph
 from langchain_core.language_models import BaseChatModel
 
 from athena_langchain.config import Settings, make_llm
+from athena_langchain.memory.vectorstore import MemoryDeps
 
 
 @dataclass
@@ -22,7 +23,7 @@ class AgentConfig:
 @dataclass
 class AgentEntry:
     config: AgentConfig
-    build_graph: Callable[[Settings, BaseChatModel], StateGraph]
+    build_graph: Callable[[Settings, BaseChatModel, MemoryDeps], StateGraph]
 
 
 class AgentRegistry:

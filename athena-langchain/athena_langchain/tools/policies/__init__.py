@@ -71,7 +71,8 @@ TOOL_REGISTRY.register(
             "type": "object",
             "properties": {
                 "user_key": {"type": "string"},
-                "schedule": {"type": "array"},
+                # Schedule is an array of blocks; keep schema permissive per backend
+                "schedule": {"type": "array", "items": {"type": "object"}},
             },
             "required": ["user_key", "schedule"],
         },

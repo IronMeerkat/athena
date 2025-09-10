@@ -19,6 +19,10 @@ goals_prompt = ChatPromptTemplate.from_messages([
     ),
     (
         "system",
+        "Optional external CONTEXT (may be empty):\n{context}",
+    ),
+    (
+        "system",
         "History:\n{history}",
     ),
     (

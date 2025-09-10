@@ -11,6 +11,7 @@ configure additional queues via Celery's routing options.
 from __future__ import annotations
 
 import os
+import logging
 
 from celery import Celery
 from celery.signals import setup_logging as celery_setup_logging
@@ -43,13 +44,32 @@ app.config_from_object({
 app.conf.worker_hijack_root_logger = False
 
 
+def _set_library_log_levels() -> None:
+    """Reduce noise from network and Celery-related libraries.
+
+    Sets common noisy libraries to WARNING so only important messages surface.
+    """
+    noisy_logger_names = (
+        "httpx",
+        "httpcore",
+        "urllib3",
+        "celery",
+        "kombu",
+        "amqp",
+        "billiard",
+    )
+    for logger_name in noisy_logger_names:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
 @celery_setup_logging.connect  # type: ignore[misc]
 def _configure_celery_logging(**kwargs):  # noqa: D401
     configure_logging(force=True)
+    _set_library_log_levels()
 
 
 # Also configure at import time for early logs
 configure_logging()
+_set_library_log_levels()
 
 # Autodiscover tasks from the ``tasks`` package.  Celery will import any
 # ``tasks.py`` modules found within ``athena_langchain`` and its

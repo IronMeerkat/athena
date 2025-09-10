@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 from typing import Optional
+import re
 from enum import StrEnum
 from pydantic import BaseModel
 from urllib.parse import urlparse
 
 from langgraph.graph import END, StateGraph
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage, ToolMessage
 
 from athena_langchain.celery import app as celery_app
 from athena_langchain.config import Settings
@@ -18,8 +20,9 @@ from athena_langchain.tools.policies.schedule import (
 from athena_langchain.agents.registry import REGISTRY
 from athena_langchain.agents.utils import BaseFlow
 from athena_langchain.agents.prompts.guardian import classify_prompt
+from athena_langchain.tools.registry import SENSITIVE_TOOLS
 from athena_langchain.memory.vectorstore import MemoryDeps
-
+from athena_langchain.tools.mongo_admin import _call_mongo  # noqa: F401
 from athena_logging import get_logger
 
 logger = get_logger(__name__)
@@ -110,6 +113,35 @@ class GuardianFlow(BaseFlow):
             return respond(updated)
 
         def classify(state: GuardianState) -> GuardianState:
+            # Build policy.* tool surface and bind to the model
+            policy_specs = [
+                (name, spec)
+                for name, spec in SENSITIVE_TOOLS.list().items()
+                if name.startswith("policy.")
+            ]
+            # Sanitize tool names to comply with OpenAI pattern ^[a-zA-Z0-9_-]+$
+            sanitized_to_original: dict[str, str] = {}
+            tools_for_llm = []
+            for name, spec in policy_specs:
+                sanitized = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+                base = sanitized
+                i = 1
+                while sanitized in sanitized_to_original and sanitized_to_original[sanitized] != name:
+                    sanitized = f"{base}_{i}"
+                    i += 1
+                sanitized_to_original[sanitized] = name
+                tools_for_llm.append(
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": sanitized,
+                            "description": spec.description,
+                            "parameters": spec.schema or {"type": "object"},
+                        },
+                    }
+                )
+            llm_with_tools = llm.bind_tools(tools_for_llm) if tools_for_llm else llm
+
             # Retrieve short context based on URL/app signals
             try:
                 query = " ".join([
@@ -123,17 +155,39 @@ class GuardianFlow(BaseFlow):
             except Exception as e:
                 logger.exception("retrieval failed: %s", e)
                 context = ""
-            chain = classify_prompt | llm
-            out = chain.invoke({
-                "strictness": state.strictness,
-                "timeblock_goal": state.goal,
-                "host": state.host,
-                "app": state.app,
-                "path": state.path,
-                "activity": state.activity,
-                "title": state.title,
-                "context": context,
-            })
+
+            # Render prompt to messages so we can inject tool results if needed
+            messages = classify_prompt.format_messages(
+                strictness=state.strictness,
+                timeblock_goal=state.goal,
+                host=state.host,
+                app=state.app,
+                path=state.path,
+                activity=state.activity,
+                title=state.title,
+                context=context,
+            )
+            out = llm_with_tools.invoke(messages)
+
+            # If the model calls tools, execute them and re-ask once
+            if isinstance(out, AIMessage) and getattr(out, "tool_calls", None):
+                tool_messages: list[ToolMessage] = []
+                for call in out.tool_calls:
+                    try:
+                        name = str(call.get("name", ""))
+                        registry_name = sanitized_to_original.get(name, name)
+                        args = call.get("args") or {}
+                        # Execute via registry
+                        result = SENSITIVE_TOOLS.call(registry_name, args)
+                        tool_messages.append(
+                            ToolMessage(content=json.dumps(result), tool_call_id=call.get("id", ""))
+                        )
+                    except Exception as e:
+                        logger.exception("tool execution failed: %s", e)
+                        tool_messages.append(
+                            ToolMessage(content=json.dumps({"error": str(e)}), tool_call_id=call.get("id", ""))
+                        )
+                out = llm_with_tools.invoke(messages + [out, *tool_messages])
 
             data = json.loads(out.content)
             try:
@@ -146,7 +200,7 @@ class GuardianFlow(BaseFlow):
                 )
                 label = Classification.NEUTRAL
             updated_state = state.model_copy(update={"classification": label})
-            # No vector writes for guardian
+            # No vector writes for guardian experimental
             return respond(updated_state)
 
         def decide(state: GuardianState) -> GuardianState:
@@ -225,4 +279,4 @@ class GuardianFlow(BaseFlow):
         return graph
 
 
-GuardianFlow()()
+# GuardianFlow()()

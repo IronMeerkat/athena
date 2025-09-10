@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from langgraph.graph import END, StateGraph
 from langchain_core.language_models.chat_models import BaseChatModel
 
+from athena_logging import get_logger
+
 from athena_langchain.agents.prompts.guardian import appeals_prompt as prompt
 from athena_langchain.config import Settings
 from athena_langchain.agents.registry import REGISTRY
@@ -13,7 +15,9 @@ from athena_langchain.tools.policies.schedule import (
     get_current_strictness,
     get_current_goal,
 )
+from athena_langchain.memory.vectorstore import MemoryDeps
 
+logger = get_logger(__name__)
 
 class AppealState(BaseModel, frozen=False):
     session_id: Optional[str] = None
@@ -43,7 +47,7 @@ class AppealsFlow(BaseFlow):
     model_name = "gpt-5"
     temperature = 0.0
 
-    def build_graph(self, settings: Settings, llm: BaseChatModel) -> StateGraph:
+    def build_graph(self, settings: Settings, llm: BaseChatModel, memory: MemoryDeps) -> StateGraph:
 
         def evaluate(state: AppealState) -> AppealState:
             strict = get_current_strictness(
@@ -54,6 +58,14 @@ class AppealsFlow(BaseFlow):
                 settings,
                 session_id=state.session_id,
             )
+            # Retrieve context relevant to the appeal
+            try:
+                query = f"{state.user_justification} {state.title} {state.host}".strip()
+                docs = memory.retriever.invoke(query) if query else []
+                context = "\n\n".join([d.page_content for d in docs]) if docs else ""
+            except Exception as e:
+                logger.exception("retrieval failed")
+                context = ""
             chain = prompt | llm
             out = chain.invoke({
                 **state.model_dump(include={
@@ -67,6 +79,7 @@ class AppealsFlow(BaseFlow):
                 }),
                 "strictness": strict,
                 "goal": goal,
+                "context": context,
             })
 
             data = json.loads(out.content)
