@@ -9,4 +9,6 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["bash"]
+RUN chmod +x scripts/entrypoint_worker.sh
+
+CMD ["bash", "-lc", "scripts/entrypoint_worker.sh"]

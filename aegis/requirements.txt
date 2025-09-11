@@ -12,10 +12,26 @@ daphne>=4.1
 celery>=5.3
 kombu>=5.3
 redis>=5.0
-psycopg2-binary>=2.9.0
+psycopg[binary,pool]==3.2.3
 python-dotenv>=1.0
 firebase-admin==6.5.0
 python-telegram-bot>=21.0
 ## Hot-reload helpers for dev
 watchfiles>=0.21
 watchdog>=3.0
+
+langchain
+langchain-core
+langchain-openai
+langchain-postgres
+langchain-mcp-adapters
+langchain-community
+langgraph
+langgraph-prebuilt
+langgraph-checkpoint-redis
+langgraph-checkpoint-postgres
+mcp
+pgvector
+sentence-transformers
+langchain-cohere
+cohere

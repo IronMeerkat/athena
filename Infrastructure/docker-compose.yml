@@ -18,7 +18,7 @@ services:
       - athena
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:7.2.0-v17
     ports:
       - "6379:6379"
     env_file:
@@ -29,7 +29,9 @@ services:
       - athena
 
   postgres:
-    image: pgvector/pgvector:pg15
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
     ports:
       - "5432:5432"
     env_file:
@@ -41,6 +43,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./sql/init-vector.sql:/docker-entrypoint-initdb.d/init-vector.sql:ro
+      - ./sql/init-postgis.sql:/docker-entrypoint-initdb.d/init-postgis.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U athena -d athena"]
       interval: 10s
@@ -85,14 +88,14 @@ services:
   #     - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
   #     - REDIS_HOST=${REDIS_HOST:-redis}
   #     - REDIS_PORT=${REDIS_PORT:-6379}
-  #     - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
+  #     - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://athena:athena@postgres:5432/athena}
   #     - OPENAI_API_KEY=${OPENAI_API_KEY}
   #   networks:
   #     - athena
 
   polymetis-sensitive:
     build: ../polymetis
-    command: ["bash", "-c", "watchfiles --filter python 'celery -A polymetis.celery worker -Q sensitive -n sensitive_worker@%h --concurrency=1 --pool=solo' /app"]
+    command: ["bash", "-lc", "scripts/entrypoint_worker.sh"]
     volumes:
       - ../polymetis:/app
     depends_on:
@@ -107,7 +110,7 @@ services:
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg3://athena:athena@postgres:5432/athena}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
     networks:
@@ -115,9 +118,10 @@ services:
 
   aegis-worker:
     build: ../aegis
-    command: ["bash", "-c", "watchfiles --filter python 'celery -A aegis.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo' /app"]
+    command: ["bash", "-lc", "scripts/entrypoint_worker.sh"]
     volumes:
       - ../aegis:/app
+      - hf_cache:/hf-cache
     depends_on:
       - rabbitmq
       - redis
@@ -129,16 +133,25 @@ services:
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
-      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/google-services.json}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://athena:athena@postgres:5432/athena}
+      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/athena-5b322.json}
+      - HF_HOME=/hf-cache
     networks:
       - athena
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   aegis:
     build: ../aegis
-    command: ["bash", "-c", "python manage.py makemigrations && python manage.py migrate && watchfiles --filter python 'daphne -b 0.0.0.0 -p 8000 aegis.asgi:application' /app"]
+    command: ["bash", "-lc", "scripts/entrypoint_web.sh"]
     volumes:
       - ../aegis:/app
+      # web does not use GPU or HF cache
     ports:
       - "8000:8000"
     depends_on:
@@ -153,8 +166,9 @@ services:
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://athena:athena@postgres:5432/athena}
-      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/google-services.json}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://athena:athena@postgres:5432/athena}
+      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/athena-5b322.json}
+      # no HF cache for web
     networks:
       - athena
 
@@ -163,6 +177,7 @@ volumes:
   redis_data:
   postgres_data:
   mongo_data:
+  hf_cache:
 
 networks:
   athena:

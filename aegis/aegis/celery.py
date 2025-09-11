@@ -55,6 +55,9 @@ app.conf.task_routes = {
     "recieved.telegram": {
         "queue": "gateway",
     },
+    "telegram_agent_task": {
+        "queue": "gateway",
+    },
 }
 
 # Define exchanges

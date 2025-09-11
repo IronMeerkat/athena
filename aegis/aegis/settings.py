@@ -47,11 +47,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # GeoDjango
+    "django.contrib.gis",
     # Third-party apps
     "rest_framework",
     'rest_framework_simplejwt',
     "corsheaders",
     "channels",
+    # Vector extensions
+    "pgvector.django",
     # Local apps
     "api",
 ]
@@ -100,7 +104,8 @@ parsed = urlparse.urlparse(DATABASE_URL)
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        # Use PostGIS backend for GeoDjango support
+        "ENGINE": "django.contrib.gis.db.backends.postgis",
         "NAME": parsed.path.lstrip("/"),
         "USER": parsed.username or "",
         "PASSWORD": parsed.password or "",
@@ -167,6 +172,7 @@ AUTH_USER_MODEL = 'api.User'
 # Channels configuration: use Redis as the channel layer backend.  This
 # allows WebSocket consumers to communicate across multiple worker
 # processes.  The host/port mirror the values defined in docker-compose.
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -186,3 +192,5 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+
+REDIS_URL = f'{os.getenv("REDIS_HOST")}:{os.getenv("REDIS_PORT")}'
