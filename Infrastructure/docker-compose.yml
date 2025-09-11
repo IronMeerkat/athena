@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   rabbitmq:
@@ -95,7 +93,7 @@ services:
 
   polymetis-sensitive:
     build: ../polymetis
-    command: ["bash", "-lc", "scripts/entrypoint_worker.sh"]
+    command: ["bash", "-lc", "chmod +x scripts/entrypoint_worker.sh || true && scripts/entrypoint_worker.sh"]
     volumes:
       - ../polymetis:/app
     depends_on:
@@ -118,7 +116,7 @@ services:
 
   aegis-worker:
     build: ../aegis
-    command: ["bash", "-lc", "scripts/entrypoint_worker.sh"]
+    command: ["bash", "-lc", "chmod +x scripts/entrypoint_worker.sh || true && scripts/entrypoint_worker.sh"]
     volumes:
       - ../aegis:/app
       - hf_cache:/hf-cache
@@ -148,7 +146,7 @@ services:
 
   aegis:
     build: ../aegis
-    command: ["bash", "-lc", "scripts/entrypoint_web.sh"]
+    command: ["bash", "-lc", "chmod +x scripts/entrypoint_web.sh || true && scripts/entrypoint_web.sh"]
     volumes:
       - ../aegis:/app
       # web does not use GPU or HF cache
