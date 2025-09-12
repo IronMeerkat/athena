@@ -120,12 +120,14 @@ async def node_converse(state: TelegramState) -> TelegramState:
 
             vectorstore.add_texts(texts, metadatas=metadatas)
 
-            await checkpointer.adelete_thread(str(state.telegram_chat_id), namespace="telegram")
+            await checkpointer.adelete_thread(str(state.telegram_chat_id))
+            await checkpointer._redis.flushall(asynchronous=True)
+            await checkpointer.asetup()
 
             # checkpointer.delete_thread(str(state.telegram_chat_id))
         except Exception:
             logger.exception("delete thread failed")
-            
+
         return TelegramState(
             text=state.text,
             telegram_chat_id=state.telegram_chat_id,
