@@ -68,6 +68,7 @@ class TelegramState(BaseState):
 
 tone_chain = tone_prompt | tone_model.with_structured_output(ToneSettings)
 
+
 async def analyze_tone(state: TelegramState) -> TelegramState:
 
     if state.text == "/start":
@@ -82,56 +83,6 @@ async def analyze_tone(state: TelegramState) -> TelegramState:
     return state
 
 async def node_converse(state: TelegramState) -> TelegramState:
-
-    if state.text == '/start':
-        try:
-            session_id = f"telegram:{state.telegram_chat_id}"
-
-            texts = []
-            metadatas = []
-
-            for idx, msg in enumerate(state.interesting_messages):
-                timestamp_ms = int(time.time() * 1000)
-                if msg.content == '/start':
-                    continue
-                texts.append(msg.content)
-
-                if len(msg.content) > 140:
-
-                    await store.aput(
-                        namespace="global",
-                        key=f"telegram:{state.telegram_chat_id}:{timestamp_ms}:{idx}",
-                        value={
-                        "text": msg.content,
-                        "agent": "telegram",
-                        "role": msg.type,
-                        "session_id": session_id,
-                        "chat_id": state.telegram_chat_id,
-                        "ts": timestamp_ms,
-                    })
-
-                metadatas.append({
-                    "agent": "telegram",
-                    "role": msg.type,
-                    "session_id": session_id,
-                    "chat_id": state.telegram_chat_id,
-                    "ts": timestamp_ms,
-                })
-
-            vectorstore.add_texts(texts, metadatas=metadatas)
-
-            await checkpointer.adelete_thread(str(state.telegram_chat_id))
-            await checkpointer._redis.flushall(asynchronous=True)
-            await checkpointer.asetup()
-
-            # checkpointer.delete_thread(str(state.telegram_chat_id))
-        except Exception:
-            logger.exception("delete thread failed")
-
-        return TelegramState(
-            text=state.text,
-            telegram_chat_id=state.telegram_chat_id,
-        )
 
     state.messages.append(HumanMessage(content=state.text))
 
@@ -150,12 +101,64 @@ async def node_converse(state: TelegramState) -> TelegramState:
 
     return state
 
+async def node_restart(state: TelegramState) -> TelegramState:
+
+    try:
+        session_id = f"telegram:{state.telegram_chat_id}"
+        texts = []
+        metadatas = []
+        for idx, msg in enumerate(state.interesting_messages):
+            timestamp_ms = int(time.time() * 1000)
+            if msg.content == '/start':
+                continue
+            texts.append(msg.content)
+            if len(msg.content) > 140:
+                await store.aput(
+                    namespace="global",
+                    key=f"telegram:{state.telegram_chat_id}:{timestamp_ms}:{idx}",
+                    value={
+                    "text": msg.content,
+                    "agent": "telegram",
+                    "role": msg.type,
+                    "session_id": session_id,
+                    "chat_id": state.telegram_chat_id,
+                    "ts": timestamp_ms,
+                })
+            metadatas.append({
+                "agent": "telegram",
+                "role": msg.type,
+                "session_id": session_id,
+                "chat_id": state.telegram_chat_id,
+                "ts": timestamp_ms,
+            })
+        vectorstore.add_texts(texts, metadatas=metadatas)
+        await checkpointer.adelete_thread(str(state.telegram_chat_id))
+        await checkpointer._redis.flushall(asynchronous=True)
+        await checkpointer.asetup()
+        # checkpointer.delete_thread(str(state.telegram_chat_id))
+    except Exception:
+        logger.exception("delete thread failed")
+    return TelegramState(
+        text=state.text,
+        telegram_chat_id=state.telegram_chat_id,
+    )
+
+
+
 graph = StateGraph(TelegramState)
+graph.add_node("route", lambda x:x)
 graph.add_node("tone", analyze_tone)
 graph.add_node("converse", node_converse)
-graph.set_entry_point("tone")
+graph.add_node("restart", node_restart)
+graph.set_entry_point("route")
+graph.add_conditional_edges(
+    "route",
+    lambda state: state.text == "/start",
+    {True: "restart", False: "tone"},
+)
 graph.add_edge("tone", "converse")
 graph.add_edge("converse", END)
+graph.add_edge("restart", END)
 
 telegram_agent = graph.compile(checkpointer=checkpointer).with_config(
     {"configurable": {"checkpoint_ns": "telegram"}}
@@ -171,7 +174,7 @@ async def telegram_agent_task(**kwargs):
 
 
     config = RunnableConfig(
-        max_concurrency=3,
+        max_concurrency=6,
         configurable={
             "thread_id": str(kwargs['telegram_chat_id']),
             "checkpoint_ns": "telegram"
@@ -183,3 +186,4 @@ async def telegram_agent_task(**kwargs):
     except Exception as e:
         logger.exception("telegram_agent_task failed")
         send_telegram_message(kwargs['telegram_chat_id'], "Sorry, I hit an error. Please try again.")
+

@@ -155,6 +155,7 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
         name="search_docs",
         description="Retrieve and rerank relevant context from the RAG vector store.",
     )
+    tools.append(rag_tool)
 else:
     embeddings : Embeddings = None
     vectorstore : PGVectorStore = None
