@@ -3,28 +3,21 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-import os
-import re
 import time
 from typing_extensions import Annotated
 
-from langgraph.graph.message import add_messages
 from django.conf import settings
 from typing import Dict, List, Any
 from langgraph.graph.state import RunnableConfig
-from pydantic import BaseModel, Field, computed_field
-from celery import shared_task
+from pydantic import BaseModel, Field
+from athena_celery import shared_task
 
 from langchain.embeddings import init_embeddings
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.redis import RedisSaver
-from langgraph.store.postgres import PostgresStore
 from langgraph.graph import END, StateGraph
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, ToolMessage, SystemMessage
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_postgres import PGVectorStore, PGEngine
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
 
 from api.agents.utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType
 
@@ -75,12 +68,12 @@ class TelegramState(BaseState):
 
 tone_chain = tone_prompt | tone_model.with_structured_output(ToneSettings)
 
-def analyze_tone(state: TelegramState) -> TelegramState:
+async def analyze_tone(state: TelegramState) -> TelegramState:
 
     if state.text == "/start":
         return state
 
-    tone = tone_chain.invoke({"user_message": state.text})
+    tone = await tone_chain.ainvoke({"user_message": state.text})
 
     state.temperature = max(0.0, min(2.0, float(tone.temperature)))
     state.reasoning_effort = str(tone.reasoning_effort)
@@ -88,7 +81,7 @@ def analyze_tone(state: TelegramState) -> TelegramState:
 
     return state
 
-def node_converse(state: TelegramState) -> TelegramState:
+async def node_converse(state: TelegramState) -> TelegramState:
 
     if state.text == '/start':
         try:
@@ -105,7 +98,7 @@ def node_converse(state: TelegramState) -> TelegramState:
 
                 if len(msg.content) > 140:
 
-                    store.put(
+                    await store.aput(
                         namespace="global",
                         key=f"telegram:{state.telegram_chat_id}:{timestamp_ms}:{idx}",
                         value={
@@ -127,12 +120,12 @@ def node_converse(state: TelegramState) -> TelegramState:
 
             vectorstore.add_texts(texts, metadatas=metadatas)
 
-            checkpointer._redis.flushdb()
+            await checkpointer.adelete_thread(str(state.telegram_chat_id), namespace="telegram")
 
             # checkpointer.delete_thread(str(state.telegram_chat_id))
         except Exception:
             logger.exception("delete thread failed")
-
+            
         return TelegramState(
             text=state.text,
             telegram_chat_id=state.telegram_chat_id,
@@ -147,7 +140,7 @@ def node_converse(state: TelegramState) -> TelegramState:
     )
     dynamic_agent = create_react_agent(dynamic_model, state_schema=TelegramState, store=store, tools=tools)
 
-    out = dynamic_agent.invoke(state)
+    out = await dynamic_agent.ainvoke(state)
 
 
     state.messages = out["messages"]
@@ -172,17 +165,18 @@ telegram_agent = graph.compile(checkpointer=checkpointer).with_config(
 
 
 @shared_task(name="telegram_agent_task")
-def telegram_agent_task(**kwargs):
+async def telegram_agent_task(**kwargs):
 
 
     config = RunnableConfig(
+        max_concurrency=3,
         configurable={
             "thread_id": str(kwargs['telegram_chat_id']),
             "checkpoint_ns": "telegram"
         }
     )
     try:
-        result = telegram_agent.invoke(kwargs, config=config)
+        result = await telegram_agent.ainvoke(kwargs, config=config)
         send_telegram_message(result['telegram_chat_id'], result['messages'][-1].content)
     except Exception as e:
         logger.exception("telegram_agent_task failed")

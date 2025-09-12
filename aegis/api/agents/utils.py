@@ -5,7 +5,6 @@ nest_asyncio.apply()
 
 import os
 import re
-import logging
 import atexit
 import sys
 from urllib.parse import quote
@@ -14,14 +13,14 @@ from athena_settings import settings
 from typing import Dict, List, Any
 from langchain_core.vectorstores import VectorStoreRetriever
 from pydantic import BaseModel, Field
-from celery import shared_task
-
+from athena_celery import shared_task
+from athena_logging import get_logger
 from langchain.embeddings import init_embeddings
 from langchain_core.embeddings import Embeddings
 from langchain_openai import ChatOpenAI
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.redis import RedisSaver
+from langgraph.checkpoint.redis import AsyncRedisSaver
 from langgraph.store.postgres import PostgresStore
 from langgraph.graph import END, StateGraph
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, ToolMessage, SystemMessage
@@ -39,7 +38,7 @@ from langchain_cohere import CohereRerank
 
 
 # Module logger
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 async def get_client_and_tools():
 
@@ -52,9 +51,10 @@ async def get_client_and_tools():
             },
         }
     )
-
+    checkpointer : AsyncRedisSaver = AsyncRedisSaver(redis_url=f'redis://{settings.REDIS_URL}')
+    await checkpointer.asetup()
     tools = await client.get_tools()
-    return client, tools
+    return client, tools, checkpointer
 
 vec_options = quote('-c search_path=rag,public', safe='')
 vec_dsn = f"{settings.DATABASE_URL}{'&' if '?' in settings.DATABASE_URL else '?'}options={vec_options}"
@@ -69,7 +69,7 @@ rag_tool = None
 
 if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstatic")):
 
-    client, tools = asyncio.run(get_client_and_tools())
+    client, tools, checkpointer = asyncio.run(get_client_and_tools())
 
     embeddings = init_embeddings(model="openai:text-embedding-3-small")
 
@@ -83,7 +83,6 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
 
     index : HNSWIndex = HNSWIndex(distance_strategy=DistanceStrategy.EUCLIDEAN, m=16, ef_construction=64)
 
-    checkpointer : RedisSaver = RedisSaver(redis_url=f'redis://{settings.REDIS_URL}/1')
 
     _store_cm = PostgresStore.from_conn_string(
     store_dsn,
@@ -160,7 +159,7 @@ else:
     embeddings : Embeddings = None
     vectorstore : PGVectorStore = None
     index : HNSWIndex = None
-    checkpointer : RedisSaver = None
+    checkpointer : AsyncRedisSaver = None
     store : PostgresStore = None
     rag_tool = None
     client : MultiServerMCPClient = None

@@ -1,6 +1,6 @@
 import hashlib
-from celery import shared_task
-from django.conf import settings
+from athena_settings import settings
+from athena_celery import shared_task
 from langchain_postgres import PGEngine, PGVectorStore
 from langchain_postgres.v2.indexes import DistanceStrategy
 from langchain_core.documents import Document
@@ -12,8 +12,6 @@ from api.agents.telegram import telegram_agent
 
 from api.integrations.telegram import send_telegram_message
 from api.models import Chat, ChatMessage
-
-from django.conf import settings
 
 from .notifications import send_fcm_message
 

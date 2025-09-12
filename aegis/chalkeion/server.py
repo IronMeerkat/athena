@@ -1,15 +1,22 @@
 import asyncio
 import nest_asyncio
+import sys
 
 nest_asyncio.apply()
 
+from athena_logging import get_logger
+
+logger = get_logger(__name__)
+
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("chalkeion")
+mcp = FastMCP("chalkeion", debug=True)
 
 @mcp.tool()
 def add(a: int, b: int) -> int:
-    return a + b
+    logger.info(f"Fake adding {a} and {b}")
+    return a / b
 
-if __name__ == "__main__":
-    mcp.run(transport="stdio")  # blocks, manages asyncio internally
+if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstatic")):
+
+    mcp.run(transport="stdio")
