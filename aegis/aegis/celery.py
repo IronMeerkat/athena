@@ -14,6 +14,9 @@ import os
 from kombu import Exchange, Queue
 from celery import Celery
 from celery.signals import setup_logging as celery_setup_logging
+from celery import signals
+import threading
+import asyncio
 from athena_logging import configure_logging
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "aegis.settings")
@@ -72,3 +75,21 @@ app.conf.task_queues = (
 def debug_task(self, *args, **kwargs):  # type: ignore[no-redef]
     """A simple debug task that prints its request context."""
     print(f"Request: {self.request!r}")
+
+
+# Warm-up async resources (e.g., MCP tools) after worker is ready
+def _warmup_runner():
+    try:
+        # Lazy import to avoid side effects at module import
+        from api.agents.utils import get_tools
+        # Preload tools once; any failure is logged by get_tools
+        _ = get_tools()
+    except Exception:
+        # Do not crash the worker on warm-up failure
+        pass
+
+
+@signals.worker_ready.connect  # type: ignore[misc]
+def _warm_up_on_worker_ready(sender=None, **kwargs):
+    t = threading.Thread(target=_warmup_runner, daemon=True)
+    t.start()

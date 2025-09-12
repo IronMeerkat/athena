@@ -28,3 +28,5 @@ aegis/aegis/athena-5b322-firebase-adminsdk-fbsvc-423b63aba6.json
 **/__pycache__/
 ai-chat-android/secrets.defaults.properties
 aegis/api/athena-5b322.json
+athena-utils/src/settings.yaml
+settings.yaml

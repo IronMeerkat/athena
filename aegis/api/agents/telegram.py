@@ -1,3 +1,8 @@
+import asyncio
+import nest_asyncio
+
+nest_asyncio.apply()
+
 import os
 import re
 import time
@@ -122,7 +127,9 @@ def node_converse(state: TelegramState) -> TelegramState:
 
             vectorstore.add_texts(texts, metadatas=metadatas)
 
-            checkpointer.delete_thread(str(state.telegram_chat_id))
+            checkpointer._redis.flushdb()
+
+            # checkpointer.delete_thread(str(state.telegram_chat_id))
         except Exception:
             logger.exception("delete thread failed")
 
@@ -141,9 +148,6 @@ def node_converse(state: TelegramState) -> TelegramState:
     dynamic_agent = create_react_agent(dynamic_model, state_schema=TelegramState, store=store, tools=tools)
 
     out = dynamic_agent.invoke(state)
-    logger.info(f"Conversing with messages:")
-    for msg in state.messages:
-        logger.info(f"  {msg.type}: {msg.content}")
 
 
     state.messages = out["messages"]
@@ -164,6 +168,8 @@ telegram_agent = graph.compile(checkpointer=checkpointer).with_config(
 
 # https://platform.openai.com/chat/edit?models=gpt-5&optimize=true
 # https://platform.openai.com/docs/guides/tools-connectors-mcp?quickstart-panels=remote-mcp
+
+
 
 @shared_task(name="telegram_agent_task")
 def telegram_agent_task(**kwargs):

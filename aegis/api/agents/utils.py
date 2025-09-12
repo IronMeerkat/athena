@@ -1,3 +1,8 @@
+import asyncio
+import nest_asyncio
+
+nest_asyncio.apply()
+
 import os
 import re
 import logging
@@ -5,8 +10,9 @@ import atexit
 import sys
 from urllib.parse import quote
 
-from django.conf import settings
+from athena_settings import settings
 from typing import Dict, List, Any
+from langchain_core.vectorstores import VectorStoreRetriever
 from pydantic import BaseModel, Field
 from celery import shared_task
 
@@ -30,25 +36,25 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_cohere import CohereRerank
-import torch
-
 
 
 # Module logger
 logger = logging.getLogger(__name__)
-# client = MultiServerMCPClient(
-#     {
-#         "polymetis": {
-#             "command": "python",
-#             "args": ["/path/to/polymetis_server.py"],
-#             "transport": "stdio",
-#         },
-#     }
-# )
 
-tools = []
-# tools = client.list_tools()
+async def get_client_and_tools():
 
+    client = MultiServerMCPClient(
+        {
+            "chalkeion": {
+                "command": "python",
+                "args": ["/app/chalkeion/server.py"],
+                "transport": "stdio",
+            },
+        }
+    )
+
+    tools = await client.get_tools()
+    return client, tools
 
 vec_options = quote('-c search_path=rag,public', safe='')
 vec_dsn = f"{settings.DATABASE_URL}{'&' if '?' in settings.DATABASE_URL else '?'}options={vec_options}"
@@ -58,11 +64,16 @@ store_dsn = f"{_db_url_no_driver}{'&' if '?' in _db_url_no_driver else '?'}optio
 
 pg_engine = PGEngine.from_connection_string(vec_dsn)
 
+# Default rag tool placeholder for loader
+rag_tool = None
+
 if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstatic")):
+
+    client, tools = asyncio.run(get_client_and_tools())
 
     embeddings = init_embeddings(model="openai:text-embedding-3-small")
 
-    vectorstore = PGVectorStore.create_sync(
+    vectorstore : PGVectorStore = PGVectorStore.create_sync(
         engine=pg_engine,
         embedding_service=embeddings,
         table_name="docs",
@@ -70,19 +81,19 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
         distance_strategy=DistanceStrategy.EUCLIDEAN,  # L2
     )
 
-    index = HNSWIndex(distance_strategy=DistanceStrategy.EUCLIDEAN, m=16, ef_construction=64)
+    index : HNSWIndex = HNSWIndex(distance_strategy=DistanceStrategy.EUCLIDEAN, m=16, ef_construction=64)
 
-    checkpointer = RedisSaver(redis_url=f'redis://{settings.REDIS_URL}/1')
+    checkpointer : RedisSaver = RedisSaver(redis_url=f'redis://{settings.REDIS_URL}/1')
 
     _store_cm = PostgresStore.from_conn_string(
     store_dsn,
     index={"dims": 1536, "embed": embeddings, "fields": ["text"]},
     )
-    store = _store_cm.__enter__()
+    store : PostgresStore = _store_cm.__enter__()
     atexit.register(lambda: _store_cm.__exit__(None, None, None))
 
 
-    def _build_retriever() -> Any:
+    def _build_retriever() -> VectorStoreRetriever | ContextualCompressionRetriever:
         search_type = os.getenv("RETRIEVAL_SEARCH_TYPE", "mmr")
         k = int(os.getenv("RETRIEVAL_K", "48"))
         fetch_k = int(os.getenv("RETRIEVAL_FETCH_K", "96"))
@@ -92,7 +103,7 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
         if search_type == "mmr":
             base_kwargs.update({"fetch_k": fetch_k, "lambda_mult": lambda_mult})
 
-        base = vectorstore.as_retriever(search_type=search_type, search_kwargs=base_kwargs)
+        base: VectorStoreRetriever = vectorstore.as_retriever(search_type=search_type, search_kwargs=base_kwargs)
 
         if os.getenv("DISABLE_RERANKING", "0") == "1":
             return base
@@ -104,7 +115,7 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
             try:
                 top_n = int(os.getenv("RERANKER_TOPN", "8"))
                 model = os.getenv("COHERE_RERANK_MODEL", "rerank-3.5")
-                reranker = CohereRerank(model=model, top_n=top_n)
+                reranker : CohereRerank = CohereRerank(model=model, top_n=top_n)
                 return ContextualCompressionRetriever(
                     base_retriever=base,
                     base_compressor=reranker,
@@ -118,15 +129,17 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
             try:
                 model_name = os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-large")
                 top_n = int(os.getenv("RERANKER_TOPN", "8"))
+                # Device is auto-selected by underlying libs; no 'device' kw in this wrapper
+                # Import torch lazily only to check availability if needed later
                 try:
-                      # type: ignore
-                    device_env = os.getenv("RERANKER_DEVICE", "cuda")
-                    device = "cuda" if device_env != "cpu" and torch.cuda.is_available() else "cpu"
+                    import torch  # type: ignore
+                    if not torch.cuda.is_available():
+                        raise Exception("CUDA failed")
                 except Exception:
-                    device = "cpu"
+                    logger.warning("using CPU", exc_info=True)
 
-                ce = HuggingFaceCrossEncoder(model_name=model_name, device=device)
-                reranker = CrossEncoderReranker(model=ce, top_n=top_n)
+                ce : HuggingFaceCrossEncoder = HuggingFaceCrossEncoder(model_name=model_name)
+                reranker : CrossEncoderReranker = CrossEncoderReranker(model=ce, top_n=top_n)
                 return ContextualCompressionRetriever(
                     base_retriever=base,
                     base_compressor=reranker,
@@ -137,20 +150,21 @@ if not any(cmd in sys.argv for cmd in ("migrate", "makemigrations", "collectstat
 
         return base
 
-    retriever = _build_retriever()
+    retriever : VectorStoreRetriever | ContextualCompressionRetriever = _build_retriever()
     rag_tool = create_retriever_tool(
         retriever,
         name="search_docs",
         description="Retrieve and rerank relevant context from the RAG vector store.",
     )
-
-    tools.append(rag_tool)
 else:
     embeddings : Embeddings = None
     vectorstore : PGVectorStore = None
     index : HNSWIndex = None
-    checkpointer = None
+    checkpointer : RedisSaver = None
     store : PostgresStore = None
+    rag_tool = None
+    client : MultiServerMCPClient = None
+    tools : list = None
 
 MsgFieldType = Annotated[List[BaseMessage], add_messages]
 

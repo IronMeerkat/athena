@@ -6,7 +6,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     env_file:
-      - ../.env
+      - ~/athena/.env
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin}
@@ -20,7 +20,7 @@ services:
     ports:
       - "6379:6379"
     env_file:
-      - ../.env
+      - ~/athena/.env
     volumes:
       - redis_data:/data
     networks:
@@ -33,7 +33,7 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - ../.env
+      - ~/athena/.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-athena}
       POSTGRES_USER: ${POSTGRES_USER:-athena}
@@ -50,37 +50,37 @@ services:
     networks:
       - athena
 
-  mongodb:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    env_file:
-      - ../.env
-    environment:
-      MONGO_INITDB_DATABASE: sensitive
-    volumes:
-      - mongo_data:/data/db
-      - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - athena
+  # mongodb:
+  #   image: mongo:7
+  #   ports:
+  #     - "27017:27017"
+  #   env_file:
+  #     - ~/athena/.env
+  #   environment:
+  #     MONGO_INITDB_DATABASE: sensitive
+  #   volumes:
+  #     - mongo_data:/data/db
+  #     - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+  #   healthcheck:
+  #     test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - athena
 
 
   # polymetis-public:
-  #   build: ../polymetis
+  #   build: ~/athena/polymetis
   #   command: ["bash", "-c", "celery -A polymetis.celery worker -Q public -n public_worker@%h --concurrency=1"]
   #   volumes:
-  #     - ../polymetis:/app
+  #     - ~/athena/polymetis:/app
   #   depends_on:
   #     - rabbitmq
   #     - redis
   #     - postgres
   #   env_file:
-  #     - ../.env
+  #     - ~/athena/.env
   #   environment:
   #     - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
   #     - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
@@ -91,41 +91,43 @@ services:
   #   networks:
   #     - athena
 
-  polymetis-sensitive:
-    build: ../polymetis
-    command: ["bash", "-lc", "chmod +x scripts/entrypoint_worker.sh || true && scripts/entrypoint_worker.sh"]
-    volumes:
-      - ../polymetis:/app
-    depends_on:
-      - rabbitmq
-      - redis
-      - postgres
-      - mongodb
-    env_file:
-      - ../.env
-    environment:
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg3://athena:athena@postgres:5432/athena}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
-    networks:
-      - athena
+  # polymetis-sensitive:
+  #   build: ~/athena/polymetis
+  #   command: ["bash", "-lc", "chmod +x scripts/entrypoint_worker.sh || true && scripts/entrypoint_worker.sh"]
+  #   volumes:
+  #     - ~/athena/polymetis:/app
+  #     - ~/athena/athena-utils:/opt/athena-utils
+  #   depends_on:
+  #     - rabbitmq
+  #     - redis
+  #     - postgres
+  #     # - mongodb
+  #   env_file:
+  #     - ~/athena/.env
+  #   environment:
+  #     - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
+  #     - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
+  #     - REDIS_HOST=${REDIS_HOST:-redis}
+  #     - REDIS_PORT=${REDIS_PORT:-6379}
+  #     - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg3://athena:athena@postgres:5432/athena}
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #     - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
+  #   networks:
+  #     - athena
 
   aegis-worker:
-    build: ../aegis
+    build: ~/athena/aegis
     command: ["bash", "-lc", "chmod +x scripts/entrypoint_worker.sh || true && scripts/entrypoint_worker.sh"]
     volumes:
-      - ../aegis:/app
+      - ~/athena/aegis:/app
+      - ~/athena/athena-utils:/opt/athena-utils
       - hf_cache:/hf-cache
     depends_on:
       - rabbitmq
       - redis
       - postgres
     env_file:
-      - ../.env
+      - ~/athena/.env
     environment:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
@@ -145,10 +147,11 @@ services:
               capabilities: [gpu]
 
   aegis:
-    build: ../aegis
+    build: ~/athena/aegis
     command: ["bash", "-lc", "chmod +x scripts/entrypoint_web.sh || true && scripts/entrypoint_web.sh"]
     volumes:
-      - ../aegis:/app
+      - ~/athena/aegis:/app
+      - ~/athena/athena-utils:/opt/athena-utils
       # web does not use GPU or HF cache
     ports:
       - "8000:8000"
@@ -158,7 +161,7 @@ services:
       - postgres
       - aegis-worker
     env_file:
-      - ../.env
+      - ~/athena/.env
     environment:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://admin:admin@rabbitmq:5672//}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-rpc://}
@@ -166,6 +169,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg://athena:athena@postgres:5432/athena}
       - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS:-/app/api/athena-5b322.json}
+      - DISABLE_RERANKING=1
       # no HF cache for web
     networks:
       - athena

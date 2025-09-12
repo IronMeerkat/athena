@@ -7,4 +7,4 @@ WORKDIR /app
 
 COPY athena-utils /opt/athena-utils
 
-RUN pip install --upgrade pip && pip install -e /opt/athena-utils
+RUN pip install --upgrade pip && pip install -e /opt/athena-utils && pip install sentence-transformers==5.1.0

@@ -17,6 +17,9 @@ from typing import List, Optional
 import urllib.parse as urlparse
 from dotenv import load_dotenv
 
+from athena_settings import settings
+
+
 
 # Load variables from .env file if present.  This allows you to provide
 # secret keys, database URLs and other configuration without modifying
@@ -30,14 +33,14 @@ load_dotenv(BASE_DIR.parent / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/stable/howto/deployment/checklist/
 
-SECRET_KEY: str = os.getenv("DJANGO_SECRET_KEY", "replace-me-please")
+SECRET_KEY: str = settings.DJANGO_SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG: bool = os.getenv("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes"}
+DEBUG: bool = settings.DEBUG
 
-ALLOWED_HOSTS: List[str] = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS: List[str] = settings.DJANGO_ALLOWED_HOSTS
 
-TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN: str = settings.TELEGRAM_BOT_TOKEN
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,6 +61,7 @@ INSTALLED_APPS = [
     "pgvector.django",
     # Local apps
     "api",
+    "chalkeion",
 ]
 
 MIDDLEWARE = [
@@ -98,7 +102,7 @@ ASGI_APPLICATION = "aegis.asgi.application"
 
 # Database configuration: use Postgres if DATABASE_URL is provided,
 # otherwise fall back to SQLite for development.
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = settings.DATABASE_URL
 
 parsed = urlparse.urlparse(DATABASE_URL)
 
@@ -177,7 +181,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [(os.getenv("REDIS_HOST", "redis"), int(os.getenv("REDIS_PORT", 6379)))],
+            "hosts": [(settings.REDIS_HOST, int(settings.REDIS_PORT))],
         },
     },
 }
@@ -185,12 +189,15 @@ CHANNEL_LAYERS = {
 # Celery configuration.  The broker points to RabbitMQ for message queuing,
 # while the result backend uses RPC.  This file is read by Celery when creating
 # the app in ``celery.py``.
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://admin:admin@rabbitmq:5672//")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "rpc://")
+CELERY_BROKER_URL = settings.CELERY_BROKER_URL
+CELERY_RESULT_BACKEND = settings.CELERY_RESULT_BACKEND
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 
-REDIS_URL = f'{os.getenv("REDIS_HOST")}:{os.getenv("REDIS_PORT")}'
+REDIS_URL = settings.REDIS_URL
+
+FIREBASE_CREDENTIALS = settings.FIREBASE_CREDENTIALS
+

@@ -9,5 +9,8 @@
     ],
     "python.analysis.extraPaths": [
         "/home/ironmeerkat/athena/athena-utils/src"
-    ]
+    ],
+    "terminal.integrated.env.linux": {
+        "COMPOSE_FILE": "/home/ironmeerkat/athena/Infrastructure/docker-compose.yml"
+    }
 }

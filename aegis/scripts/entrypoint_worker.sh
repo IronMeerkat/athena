@@ -18,6 +18,6 @@ python manage.py makemigrations
 python manage.py migrate
 
 # Start Celery worker with hot-reload for dev
-exec watchfiles --filter python "celery -A aegis.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo" /app
+exec watchfiles --filter python "celery -A aegis.celery worker -Q gateway -n gateway_worker@%h --concurrency=1 --pool=solo -l INFO --logfile=-" /app /opt/athena-utils
 
 

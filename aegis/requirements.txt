@@ -3,35 +3,38 @@
 # capabilities via Django Channels and background task support via Celery.
 
 Django==5.2.5
-djangorestframework>=3.14
-djangorestframework-simplejwt>=5.3
-django-cors-headers>=4.0
-channels>=4.0
-channels-redis>=4.0
-daphne>=4.1
-celery>=5.3
-kombu>=5.3
-redis>=5.0
+djangorestframework==3.16.1
+djangorestframework-simplejwt==5.5.1
+django-cors-headers==4.8.0
+channels==4.3.1
+channels-redis==4.3.0
+daphne==4.2.1
+celery==5.5.3
+kombu==5.5.4
+redis==6.4.0
 psycopg[binary,pool]==3.2.3
-python-dotenv>=1.0
+python-dotenv==1.1.1
 firebase-admin==6.5.0
-python-telegram-bot>=21.0
+python-telegram-bot==22.3
 ## Hot-reload helpers for dev
-watchfiles>=0.21
-watchdog>=3.0
+watchfiles==1.1.0
+watchdog==6.0.0
+geoalchemy2==0.15.2
+nest-asyncio==1.6.0
 
-langchain
-langchain-core
-langchain-openai
-langchain-postgres
-langchain-mcp-adapters
-langchain-community
-langgraph
-langgraph-prebuilt
-langgraph-checkpoint-redis
-langgraph-checkpoint-postgres
-mcp
-pgvector
-sentence-transformers
-langchain-cohere
-cohere
+langchain==0.3.27
+langchain-core==0.3.76
+langchain-openai==0.3.33
+langchain-postgres==0.0.15
+langchain-mcp-adapters==0.1.9
+langchain-community==0.3.29
+langgraph==0.6.7
+langgraph-prebuilt==0.6.4
+langgraph-checkpoint-redis==0.1.1
+langgraph-checkpoint-postgres==2.0.23
+mcp==1.14.0
+# pgvector==0.4.1
+sentence-transformers==5.1.0
+langchain-cohere==0.4.5
+cohere==5.18.0
+pydantic-settings==2.10.1
