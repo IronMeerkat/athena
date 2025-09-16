@@ -1,7 +1,0 @@
----
-description: This describes some constraints on Athena's architecture.
-globs:
-alwaysApply: true
----
-
-- Aegis is the traffic cop, nobody ever talks to her agents except via the DRF.

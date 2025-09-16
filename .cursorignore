@@ -22,7 +22,7 @@
 # **/dist/
 chatgpt-android
 chatgpt-android
-aegis/aegis/athena-5b322-firebase-adminsdk-fbsvc-423b63aba6.json
+**/athena-5b322.json
 *.pyc
 *.egg-info/
 **/__pycache__/

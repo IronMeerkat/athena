@@ -29,4 +29,4 @@ classifiers = [
 
 [tool.setuptools]
 package-dir = { "" = "src" }
-py-modules = ["athena_logging", "athena_settings", "athena_celery"]
+py-modules = ["athena_logging", "athena_settings", "athena_celery", "athena_models"]

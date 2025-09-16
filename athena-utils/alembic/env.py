@@ -8,6 +8,7 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from athena_settings import settings
 
 config = context.config
 if config.config_file_name is not None:
@@ -15,33 +16,25 @@ if config.config_file_name is not None:
 
 
 # Ensure "src" is on sys.path so we can import models
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# This works both from athena-utils directory and from root directory
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # athena-utils directory
 SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from models.base import metadata  # noqa: E402
+from athena_models.utils import Base  # noqa: E402
 # Import models so tables are registered in metadata for autogenerate
-import models.user  # noqa: F401,E402
-import models.chat  # noqa: F401,E402
-import models.doc  # noqa: F401,E402
-import models.store  # noqa: F401,E402
-import models.digital_wellbeing  # noqa: F401,E402
+import athena_models.user  # noqa: F401,E402
+import athena_models.chat  # noqa: F401,E402
+import athena_models.doc  # noqa: F401,E402
+import athena_models.store  # noqa: F401,E402
+import athena_models.digital_wellbeing  # noqa: F401,E402
 
-target_metadata = metadata
+target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    url = os.getenv("DATABASE_URL", "")
-    if url:
-        # normalize to psycopg driver
-        if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql+psycopg://", 1)
-        elif url.startswith("postgresql://") and "+" not in url:
-            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
-        return url
-    # Fallback for local dev if env var isn't present
-    return "postgresql+psycopg://localhost/athena"
+    return settings.DATABASE_URL
 
 
 def run_migrations_offline() -> None:

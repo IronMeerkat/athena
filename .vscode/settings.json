@@ -12,5 +12,25 @@
     ],
     "terminal.integrated.env.linux": {
         "COMPOSE_FILE": "/home/ironmeerkat/athena/Infrastructure/docker-compose.yml"
-    }
+    },
+    "files.exclude": {
+        "**/.venv/**": true,
+        "**/.env": true,
+        "**/google-services.json": true,
+        "**/node_modules/**": true,
+        "**/dist/**": true,
+        "**/build/**": true,
+        "**/__pycache__/**": true,
+        "**/*.egg-info/**": true,
+        "**/.pytest_cache/**": true,
+        "**/.ruff_cache/**": true,
+
+        "**/old_polymetis/**": true,
+        "**/old_aegis/**": true,
+
+        "**/athena-browser-extension/**": true,
+        "**/ai-chat-android/**": true,
+
+    },
+    "folder-color.pathColors": []
 }
