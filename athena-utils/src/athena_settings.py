@@ -1,11 +1,11 @@
 from pydantic import create_model
 from typing import Any, Dict, Optional
 import yaml
-import pkg_resources
+import importlib.resources
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-settings_file = pkg_resources.resource_filename(__name__, 'settings.yaml')
+settings_file = importlib.resources.files(__name__) / 'settings.yaml'
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(validate_default=False, case_sensitive=True)
