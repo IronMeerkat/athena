@@ -21,7 +21,7 @@ class TopicSettings(BaseUtilityState):
     )
 
 
-lite_agent = create_react_agent(lite_model, state_schema=TopicSettings)
+lite_agent = create_react_agent(lite_model, state_schema=TopicSettings, tools=[])
 
 async def determine_topics(state: TopicSettings) -> TopicSettings:
     state = state.from_other_state(state)

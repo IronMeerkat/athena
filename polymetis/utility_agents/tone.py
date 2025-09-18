@@ -14,7 +14,7 @@ class ToneSettings(BaseUtilityState):
     reasoning_effort: str = Field(default="medium", choices=["minimal", "low", "medium", "high"])
     verbosity: str = Field(default="medium", choices=["low", "medium", "high"])
 
-lite_agent = create_react_agent(lite_model, state_schema=ToneSettings)
+lite_agent = create_react_agent(lite_model, state_schema=ToneSettings, tools=[])
 
 
 async def determine_tone(state: ToneSettings) -> ToneSettings:
