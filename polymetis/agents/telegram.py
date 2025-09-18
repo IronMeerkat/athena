@@ -17,7 +17,7 @@ from langgraph.graph import END, StateGraph, START
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType
+from utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType, archive_thread
 from utility_agents import determine_tone, determine_topics
 from utility_agents.topic import TopicLiteral
 from agents.prompts import *
@@ -32,14 +32,22 @@ base_model = ChatOpenAI(model="gpt-5")
 
 class TelegramState(BaseState):
     messages: MsgFieldType = Field(default_factory=lambda: [SYSTEM_PROMPT_1, AI_PROMPT_1])
-    telegram_chat_id: int
+    session_id: int
     temperature: float = 0.9
     reasoning_effort: str = "medium"
     verbosity: str = "medium"
     topics: List[TopicLiteral] = Field(default_factory=list)
+    needs_restart: bool = False
 
 
 async def primer(state: TelegramState) -> TelegramState:
+
+    if state.needs_restart:
+        await checkpointer.adelete_thread(str(state.session_id))
+        state.messages.clear()
+        state.messages.append(SYSTEM_PROMPT_1)
+        state.messages.append(AI_PROMPT_1)
+        state.needs_restart = False
 
     state.messages.append(HumanMessage(content=state.text))
 
@@ -48,10 +56,11 @@ async def primer(state: TelegramState) -> TelegramState:
     state.reasoning_effort = str(tone.reasoning_effort)
     state.verbosity = str(tone.verbosity)
 
-    state.topics = await determine_topics(state)
+    state.topics = (await determine_topics(state)).topics
 
     for topic in state.topics:
         state.messages.append(TOPIC_PROMPT_DICT[topic])
+
 
     logger.info(f"state.messages: {len(state.messages)}")
 
@@ -65,7 +74,7 @@ async def node_converse(state: TelegramState) -> TelegramState:
         reasoning_effort=state.reasoning_effort,
         verbosity=state.verbosity,
     )
-    dynamic_agent = create_react_agent(dynamic_model, state_schema=TelegramState, store=store, tools=tools)
+    dynamic_agent = create_react_agent(dynamic_model, store=store, state_schema=TelegramState, tools=tools)
 
     out = await dynamic_agent.ainvoke(state)
 
@@ -77,54 +86,26 @@ async def node_converse(state: TelegramState) -> TelegramState:
 
 async def node_restart(state: TelegramState) -> TelegramState:
 
+
     try:
-        session_id = f"telegram:{state.telegram_chat_id}"
-        texts = []
-        metadatas = []
-        for idx, msg in enumerate(state.interesting_messages):
-            timestamp_ms = int(time.time() * 1000)
-            if msg.content == '/start':
-                continue
-            texts.append(msg.content)
-            if len(msg.content) > 140:
-                await store.aput(
-                    namespace="global",
-                    key=f"telegram:{state.telegram_chat_id}:{timestamp_ms}:{idx}",
-                    value={
-                    "text": msg.content,
-                    "agent": "telegram",
-                    "role": msg.type,
-                    "session_id": session_id,
-                    "chat_id": state.telegram_chat_id,
-                    "ts": timestamp_ms,
-                })
-            metadatas.append({
-                "agent": "telegram",
-                "role": msg.type,
-                "session_id": session_id,
-                "chat_id": state.telegram_chat_id,
-                "ts": timestamp_ms,
-            })
-        vectorstore.add_texts(texts, metadatas=metadatas)
-        await checkpointer.adelete_thread(str(state.telegram_chat_id))
-        await checkpointer._redis.flushall(asynchronous=True)
-        await checkpointer.asetup()
-        # checkpointer.delete_thread(str(state.telegram_chat_id))
+        await archive_thread(state, namespace="telegram")
+        state.needs_restart = True
+        state.messages.append(AI_PROMPT_1)
+
+        return state
+
     except Exception:
         logger.exception("delete thread failed")
-    return TelegramState(
-        # text=AI_PROMPT_1.content,
-        text="",
-        telegram_chat_id=state.telegram_chat_id,
-        # messages=[SYSTEM_PROMPT_1, AI_PROMPT_1]
-    )
+        state.messages.append(AIMessage(content="Failed to clear session", skip_storage=True))
+
+    return state
 
 
 graph = StateGraph(TelegramState)
-graph.add_node("route", lambda x: x)
-graph.add_node("primer", primer)
-graph.add_node("converse", node_converse, defer=True)  # good hygiene if branches ever differ
-graph.add_node("restart", node_restart)
+graph.add_node("route", lambda x: x, defer=True)
+graph.add_node("primer", primer, defer=True)
+graph.add_node("converse", node_converse)
+graph.add_node("restart", node_restart, defer=True)
 
 graph.set_entry_point("route")
 graph.add_conditional_edges(
@@ -152,14 +133,14 @@ async def telegram_agent_task(**kwargs):
     config = RunnableConfig(
         max_concurrency=6,
         configurable={
-            "thread_id": str(kwargs['telegram_chat_id']),
+            "thread_id": str(kwargs['session_id']),
             "checkpoint_ns": "telegram"
         }
     )
     try:
         result = await telegram_agent.ainvoke(kwargs, config=config)
-        send_telegram_message(result['telegram_chat_id'], result['messages'][-1].content)
+        send_telegram_message(result['session_id'], result['messages'][-1].content)
     except Exception as e:
         logger.exception("telegram_agent_task failed")
-        send_telegram_message(kwargs['telegram_chat_id'], "Sorry, I hit an error. Please try again.")
+        send_telegram_message(kwargs['session_id'], "Sorry, I hit an error. Please try again.")
 

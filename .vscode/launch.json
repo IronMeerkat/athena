@@ -22,7 +22,8 @@
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/aegis",
-                "PYTHONUNBUFFERED": "1"
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONWARNINGS": "ignore::UserWarning"
             }
         },
         {
@@ -51,7 +52,8 @@
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/polymetis",
-                "PYTHONUNBUFFERED": "1"
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONWARNINGS": "ignore::UserWarning"
             }
         }
     ]

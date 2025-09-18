@@ -135,12 +135,14 @@ class BaseState(PydanticBaseModel, frozen=False):
     @computed_field
     @property
     def interesting_messages(self) -> List[BaseMessage]:
-        return [msg for msg in self.messages if msg.type in ("human", "ai") and msg.content]
+        return [msg for msg in self.messages
+                if msg.type in ("human", "ai") and msg.content
+                and not msg.additional_kwargs.get("skip_storage", False)]
 
 class BaseUtilityState(BaseState):
 
     @classmethod
     def from_other_state(cls, other_state: BaseState) -> 'BaseUtilityState':
-        self = cls()
+        self = cls(**other_state.model_dump(exclude={"messages"}))
         self.messages.append(other_state.user_message)
         return self

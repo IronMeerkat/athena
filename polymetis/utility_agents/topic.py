@@ -2,10 +2,13 @@ from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import Field, field_validator
 from polymetis.agents.prompts import TOPIC_PROMPT_DICT, SYSTEM_PROMPT_1, TOPIC_PROMPT
-from utils import BaseUtilityState, MsgFieldType
+from utils import BaseUtilityState, MsgFieldType, BaseModel
 from typing import List
 from typing_extensions import Literal
 from langgraph.prebuilt import create_react_agent
+from athena_logging import get_logger
+
+logger = get_logger(__name__)
 
 lite_model = ChatOpenAI(model="gpt-5-mini", temperature=0.4, reasoning_effort="low", verbosity="low")
 
@@ -21,8 +24,15 @@ class TopicSettings(BaseUtilityState):
     )
 
 
-lite_agent = create_react_agent(lite_model, state_schema=TopicSettings, tools=[])
+class TopicResponse(BaseModel):
+    topics: List[TopicLiteral]
 
-async def determine_topics(state: TopicSettings) -> TopicSettings:
-    state = state.from_other_state(state)
-    return await lite_agent.ainvoke(state)
+lite_agent = create_react_agent(lite_model, response_format=TopicResponse, tools=[])
+
+async def determine_topics(state: TopicSettings) -> TopicResponse:
+    state = TopicSettings.from_other_state(state)
+    response = await lite_agent.ainvoke(state)
+    response = response['structured_response']
+    state.messages.clear()
+    logger.info(f"state: {response}")
+    return response

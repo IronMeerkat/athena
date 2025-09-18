@@ -21,6 +21,6 @@ async def telegram_webhook(data: dict = Body(...)):
 
     text = message['text']
     chat_id = message['chat']['id']
-    send_celery_task("telegram_agent_task", telegram_chat_id=chat_id, text=text)
+    send_celery_task("telegram_agent_task", session_id=chat_id, text=text)
 
     return Response(status_code=status.HTTP_200_OK)
