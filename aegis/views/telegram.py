@@ -13,7 +13,7 @@ telegram_router = APIRouter(
 )
 
 
-@telegram_router.post("/")
+@telegram_router.post("")
 async def telegram_webhook(data: dict = Body(...)):
     message = data.get("message") or data.get("edited_message")
     if not message:
@@ -21,7 +21,6 @@ async def telegram_webhook(data: dict = Body(...)):
 
     text = message['text']
     chat_id = message['chat']['id']
-
     send_celery_task("telegram_agent_task", telegram_chat_id=chat_id, text=text)
 
-    return Response(status=status.HTTP_200_OK)
+    return Response(status_code=status.HTTP_200_OK)

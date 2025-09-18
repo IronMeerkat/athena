@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 from typing import List
 
 from sqlalchemy import ForeignKey
@@ -18,6 +19,7 @@ import sqlalchemy as sa
 from sqlalchemy.schema import MetaData
 
 from athena_settings import settings
+from athena_logging import get_logger
 
 
 NAMING_CONVENTION = {
@@ -47,5 +49,10 @@ class Base(AsyncAttrs, DeclarativeBase):
     metadata = metadata
 
 
-engine = create_async_engine(settings.DATABASE_URL, echo=True)
+# Configure SQLAlchemy logging to use athena_logger and only log warnings and higher
+sqlalchemy_logger = get_logger("sqlalchemy.engine")
+sqlalchemy_logger.setLevel(logging.WARNING)
+
+# Create engine without echo, let athena_logger handle it
+engine = create_async_engine(settings.DATABASE_URL, echo=False)
 db_session = async_sessionmaker(engine, expire_on_commit=False)

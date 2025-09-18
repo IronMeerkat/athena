@@ -4,6 +4,7 @@ import re
 import atexit
 import sys
 from urllib.parse import quote
+import operator
 
 from athena_settings import settings
 from typing import Dict, List, Any
@@ -107,27 +108,39 @@ tools.append(rag_tool)
 MsgFieldType = Annotated[List[BaseMessage], add_messages]
 
 class BaseState(PydanticBaseModel, frozen=False):
+    messages: MsgFieldType
     text: str
-    remaining_steps: int = 5
+    remaining_steps: int = 6
+    juice: int = 6
+    scratch: Annotated[List[str], operator.add] = Field(default_factory=list)
+    done: bool = False
 
     @computed_field
     @property
-    def user_message(self) -> str:
+    def user_message(self) -> HumanMessage:
         for message in self.messages[::-1]:
             if message.type == "human":
-                return message.content
-        return ""
+                return message
+        return HumanMessage(content="")
 
 
     @computed_field
     @property
-    def assistant(self) -> str:
+    def assistant_message(self) -> AIMessage:
         for message in self.messages[::-1]:
             if message.type == "ai":
-                return message.content
-        return ""
+                return message
+        return AIMessage(content="")
 
     @computed_field
     @property
     def interesting_messages(self) -> List[BaseMessage]:
         return [msg for msg in self.messages if msg.type in ("human", "ai") and msg.content]
+
+class BaseUtilityState(BaseState):
+
+    @classmethod
+    def from_other_state(cls, other_state: BaseState) -> 'BaseUtilityState':
+        self = cls()
+        self.messages.append(other_state.user_message)
+        return self

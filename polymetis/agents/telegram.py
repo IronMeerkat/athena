@@ -1,13 +1,10 @@
 import asyncio
-import nest_asyncio
-
-nest_asyncio.apply()
 
 import time
 from typing_extensions import Annotated
 from enum import Enum
 
-from django.conf import settings
+from athena_settings import settings
 from typing import Dict, List, Any, Literal
 from langgraph.graph.state import RunnableConfig
 from pydantic import BaseModel, Field, field_validator
@@ -21,113 +18,47 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType
-from prompts import *
+from utility_agents import determine_tone, determine_topics
+from utility_agents.topic import TopicLiteral
+from agents.prompts import *
 from integrations.telegram import send_telegram_message
 from athena_logging import get_logger
 
 logger = get_logger(__name__)
 
 
-
 # Base model (bound per-turn using tone settings)
 base_model = ChatOpenAI(model="gpt-5")
 
-lite_model = ChatOpenAI(model="gpt-5-mini", temperature=0.4, reasoning_effort="low", verbosity="low")
-
-class ToneSettings(BaseModel):
-    temperature: float
-    reasoning_effort: str
-    verbosity: str
-
-# Create a Literal type from TOPIC_PROMPT_DICT keys for strict validation
-TopicLiteral = Literal["philosophy", "political", "foreign_policy", "science"]
-
-class TopicSettings(BaseModel):
-    topics: List[TopicLiteral] = Field(
-        description="List of topic keys from TOPIC_PROMPT_DICT",
-        min_items=0,
-        max_items=len(TOPIC_PROMPT_DICT)
-    )
-
-    @field_validator('topics', mode='before')
-    @classmethod
-    def validate_topics(cls, v):
-        """Validate that all topics are valid keys from TOPIC_PROMPT_DICT"""
-        if not isinstance(v, list):
-            raise ValueError("topics must be a list")
-
-        valid_keys = set(TOPIC_PROMPT_DICT.keys())
-        for topic in v:
-            if topic not in valid_keys:
-                raise ValueError(f"Invalid topic '{topic}'. Must be one of: {', '.join(valid_keys)}")
-
-        return v
-
 class TelegramState(BaseState):
-    remaining_steps: int = 5
     messages: MsgFieldType = Field(default_factory=lambda: [SYSTEM_PROMPT_1, AI_PROMPT_1])
     telegram_chat_id: int
     temperature: float = 0.9
     reasoning_effort: str = "medium"
     verbosity: str = "medium"
+    topics: List[TopicLiteral] = Field(default_factory=list)
 
-
-tone_chain = tone_prompt_template | lite_model.with_structured_output(ToneSettings)
-topic_chain = topic_picker_prompt_template | lite_model.with_structured_output(TopicSettings)
-
-def collapse_system_messages(msgs):
-    sys_parts, other = [], []
-    for m in msgs:
-        if isinstance(m, SystemMessage):
-            sys_parts.append(m.content)
-        else:
-            other.append(m)
-    # Last-wins is risky; better to concatenate with clear sections.
-    combined = "\n\n".join(sys_parts)
-    return [SystemMessage(content=combined)] + other
 
 async def primer(state: TelegramState) -> TelegramState:
 
-    tone = await tone_chain.ainvoke({"user_message": state.text})
+    state.messages.append(HumanMessage(content=state.text))
 
-    try:
-        topics = await topic_chain.ainvoke({
-            "user_message": state.text,
-            "topics": ", ".join(TOPIC_PROMPT_DICT.keys()),
-        })
-
-        # Validate the topics output
-        if not hasattr(topics, 'topics') or not isinstance(topics.topics, list):
-            logger.error(f"Invalid topics output: {topics}")
-            topics = TopicSettings(topics=[])  # Default to empty list
-
-        logger.info(f"topics: {topics}")
-
-        # Add topic-specific prompts to messages
-        for topic in topics.topics:
-            if topic in TOPIC_PROMPT_DICT:
-                state.messages.append(TOPIC_PROMPT_DICT[topic])
-            else:
-                logger.warning(f"Unknown topic '{topic}' not found in TOPIC_PROMPT_DICT")
-
-    except Exception as e:
-        logger.exception(f"Error in topic_chain: {e}")
-        # Fallback to empty topics list
-        topics = TopicSettings(topics=[])
-
+    tone = await determine_tone(state)
     state.temperature = max(0.0, min(2.0, float(tone.temperature)))
     state.reasoning_effort = str(tone.reasoning_effort)
     state.verbosity = str(tone.verbosity)
 
+    state.topics = await determine_topics(state)
+
+    for topic in state.topics:
+        state.messages.append(TOPIC_PROMPT_DICT[topic])
+
     logger.info(f"state.messages: {len(state.messages)}")
 
-
+    return state
 
 async def node_converse(state: TelegramState) -> TelegramState:
 
-    # state.messages = collapse_system_messages(state.messages)
-
-    state.messages.append(HumanMessage(content=state.text))
 
     dynamic_model = base_model.bind(
         temperature=state.temperature,
@@ -182,9 +113,10 @@ async def node_restart(state: TelegramState) -> TelegramState:
     except Exception:
         logger.exception("delete thread failed")
     return TelegramState(
-        text=AI_PROMPT_1.content,
+        # text=AI_PROMPT_1.content,
+        text="",
         telegram_chat_id=state.telegram_chat_id,
-        messages=[SYSTEM_PROMPT_1, AI_PROMPT_1]
+        # messages=[SYSTEM_PROMPT_1, AI_PROMPT_1]
     )
 
 
@@ -214,11 +146,8 @@ telegram_agent = graph.compile(checkpointer=checkpointer).with_config(
 # https://platform.openai.com/chat/edit?models=gpt-5&optimize=true
 # https://platform.openai.com/docs/guides/tools-connectors-mcp?quickstart-panels=remote-mcp
 
-
-
 @shared_task(name="telegram_agent_task")
 async def telegram_agent_task(**kwargs):
-
 
     config = RunnableConfig(
         max_concurrency=6,

@@ -21,7 +21,8 @@
             "jinja": true,
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/aegis"
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/aegis",
+                "PYTHONUNBUFFERED": "1"
             }
         },
         {
@@ -31,20 +32,25 @@
             "program": "${workspaceFolder}/.venv/bin/watchmedo",
             "args": [
                 "auto-restart",
-                "--directory=${workspaceFolder}",
-                "--pattern=*.py",
+                "--directory=${workspaceFolder}/polymetis",
+                "--directory=${workspaceFolder}/athena-utils",
+                "--patterns=*.py;*.yaml",
                 "--recursive",
                 "--",
                 "celery",
-                "-A", "polymetis.run:celery_app",
+                "-A", "run:celery_app",
                 "worker",
-                "--loglevel=info"
+                // "--beat",
+                "--loglevel=info",
+                "--concurrency=1",
+                "--pool=solo",
+                "--logfile=-"
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/polymetis",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "${workspaceFolder}",
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/polymetis",
                 "PYTHONUNBUFFERED": "1"
             }
         }

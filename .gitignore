@@ -31,3 +31,4 @@ ai-chat-android/secrets.defaults.properties
 athena-utils/src/settings.yaml
 settings.yaml
 **/prompts.py
+polymetis/celerybeat-schedule
