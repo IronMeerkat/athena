@@ -8,18 +8,18 @@ export const isDistraction = async (title: string): Promise<boolean> => {
       body: JSON.stringify({ agent_id: 'distraction_guardian', input: { title }, options: { sensitive: false } }),
     });
     if (!res.ok) {
-      console.error('Athena-DRF isDistraction failed:', res.status, await res.text());
+      console.error('Aegis isDistraction failed:', res.status, await res.text());
       return false;
     }
     // We only queue a run here. For now, conservatively do not block immediately.
     // Future: subscribe to /api/runs/<run_id>/events and derive decision.
     const data = (await res.json()) as { run_id?: string };
     if (!data?.run_id) {
-      console.warn('Athena-DRF isDistraction: run_id missing in response');
+      console.warn('Aegis isDistraction: run_id missing in response');
     }
     return false;
   } catch (err) {
-    console.error('Athena-DRF isDistraction error:', err);
+    console.error('Aegis isDistraction error:', err);
     return false;
   }
 };
@@ -43,17 +43,17 @@ export const evaluateAppeal = async (
       body: JSON.stringify({ agent_id: 'appeals_agent', input: { conversation, context }, options: { sensitive: false } }),
     });
     if (!res.ok) {
-      console.error('Athena-DRF evaluateAppeal failed:', res.status, await res.text());
+      console.error('Aegis evaluateAppeal failed:', res.status, await res.text());
       return { assistant: 'Unable to evaluate appeal at the moment.', allow: false, minutes: 0 };
     }
     const data = (await res.json()) as { run_id?: string };
     if (!data?.run_id) {
-      console.warn('Athena-DRF evaluateAppeal: run_id missing in response');
+      console.warn('Aegis evaluateAppeal: run_id missing in response');
     }
     // For now, default to deny until the SSE pipeline is wired up in the UI.
     return { assistant: 'Your request is being processed by Athena.', allow: false, minutes: 0 };
   } catch (err) {
-    console.error('Athena-DRF evaluateAppeal error:', err);
+    console.error('Aegis evaluateAppeal error:', err);
     return { assistant: 'Error evaluating appeal.', allow: false, minutes: 0 };
   }
 };

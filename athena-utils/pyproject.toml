@@ -1,5 +1,15 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = [
+  "setuptools>=68",
+  "wheel",
+  "pydantic-settings==2.10.1",
+  "alembic==1.16.5",
+  "sqlalchemy==2.0.43",
+  "psycopg[binary,pool]==3.2.3",
+  "geoalchemy2==0.15.2",
+  "langchain-postgres==0.0.15",
+  "langgraph-checkpoint-postgres==2.0.23"
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,7 +19,7 @@ description = "Shared utilities for Athena"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Athena Team" }]
+authors = [{ name = "IronMeerkat" }]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
@@ -19,4 +29,4 @@ classifiers = [
 
 [tool.setuptools]
 package-dir = { "" = "src" }
-py-modules = ["athena_logging"]
+py-modules = ["athena_logging", "athena_settings", "athena_celery", "athena_models"]

@@ -45,6 +45,8 @@ from logging import (
     getLogger,
 )
 
+from athena_settings import settings
+
 # Type aliases to keep annotations short and readable
 LogCallable = Callable[..., object]
 LogDecorator = Callable[
@@ -141,10 +143,10 @@ class _ColorFormatter(Formatter):
     RESET = "\033[0m"
 
     LEVEL_TO_COLOR = {
-        DEBUG: "\033[36m",      # Cyan
-        INFO: "\033[32m",       # Green
-        WARNING: "\033[33m",    # Yellow
-        ERROR: "\033[31m",      # Red
+        DEBUG: "\033[96m",      # Bright Cyan
+        INFO: "\033[92m",       # Bright Green
+        WARNING: "\033[93m",    # Bright Yellow
+        ERROR: "\033[91m",      # Bright Red
         CRITICAL: "\033[97;41m",  # White on red background
     }
 
@@ -216,11 +218,11 @@ def configure_logging(
     if _is_configured and not force:
         return
 
-    env_level = os.getenv("ATHENA_LOG_LEVEL")
-    env_format = os.getenv("ATHENA_LOG_FORMAT")
-    env_service = os.getenv("ATHENA_LOG_SERVICE")
-    env_file = os.getenv("ATHENA_LOG_FILE")
-    env_color = os.getenv("ATHENA_LOG_COLOR")
+    env_level = settings.ATHENA_LOG_LEVEL
+    env_format = settings.ATHENA_LOG_FORMAT
+    env_service = settings.ATHENA_LOG_SERVICE
+    env_file = settings.ATHENA_LOG_FILE
+    env_color = settings.ATHENA_LOG_COLOR
 
     effective_level = _coerce_level(level or env_level)
     use_json = (
@@ -258,11 +260,11 @@ def configure_logging(
     else:
         # Timestamp, level, service, context, logger and message
         fmt = (
-            "%(asctime)s %(levelname)s %(service_name)s "
-            "[rid=%(request_id)s uid=%(user_id)s] "
-            "%(name)s:%(lineno)d - %(message)s"
+            "%(asctime)s %(levelname)s "
+            # "[rid=%(request_id)s uid=%(user_id)s] "
+            "\033[3m%(name)s:%(lineno)d\033[0m - %(message)s"
         )
-        datefmt = "%Y-%m-%dT%H:%M:%S%z"
+        datefmt = "%H:%M:%S"
         color_mode = _coerce_color_mode(env_color)
         use_color = _should_colorize(color_mode, sys.stdout)
         console_handler.setFormatter(

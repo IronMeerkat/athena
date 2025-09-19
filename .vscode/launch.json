@@ -6,67 +6,55 @@
     "configurations": [
 
         {
-            "name": "Attach: DRF (daphne)",
+            "name": "Python: FastAPI",
             "type": "python",
-            "request": "attach",
-            "connect": {
-                "host": "localhost",
-                "port": 5678
-            },
-            "pathMappings": [
-                {
-                    "localRoot": "/home/ironmeerkat/athena-DRF",
-                    "remoteRoot": "/app"
-                }
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "asgi:app",
+                "--reload",
+                "--reload-dir", "${workspaceFolder}/aegis",
+                "--reload-dir", "${workspaceFolder}/athena-utils/src"
             ],
-            "justMyCode": false,
-            "postDebugTask": "compose: down (debug)"
+            "cwd": "${workspaceFolder}/aegis",
+            "console": "integratedTerminal",
+            "jinja": true,
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/aegis",
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONWARNINGS": "ignore::UserWarning"
+            }
         },
         {
-            "name": "Attach: DRF Worker (celery)",
+            "name": "Python: Polymetis Celery",
             "type": "python",
-            "request": "attach",
-            "connect": {
-                "host": "localhost",
-                "port": 5679
-            },
-            "pathMappings": [
-                {
-                    "localRoot": "/home/ironmeerkat/athena-DRF",
-                    "remoteRoot": "/app"
-                }
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/watchmedo",
+            "args": [
+                "auto-restart",
+                "--directory=${workspaceFolder}/polymetis",
+                "--directory=${workspaceFolder}/athena-utils",
+                "--patterns=*.py;*.yaml",
+                "--recursive",
+                "--",
+                "celery",
+                "-A", "run:celery_app",
+                "worker",
+                // "--beat",
+                "--loglevel=info",
+                "--concurrency=1",
+                "--pool=solo",
+                "--logfile=-"
             ],
-            "justMyCode": false,
-            "postDebugTask": "compose: down (debug)"
-        },
-        {
-            "name": "Attach: LangChain Worker (celery)",
-            "type": "python",
-            "request": "attach",
-            "connect": {
-                "host": "localhost",
-                "port": 5680
-            },
-            "pathMappings": [
-                {
-                    "localRoot": "/home/ironmeerkat/athena-langchain",
-                    "remoteRoot": "/app"
-                }
-            ],
-            "justMyCode": false,
-            "postDebugTask": "compose: down (debug)"
-        }
-    ],
-    "compounds": [
-        {
-            "name": "Attach: All (DRF + Worker + LangChain)",
-            "configurations": [
-                "Attach: DRF (daphne)",
-                "Attach: DRF Worker (celery)",
-                "Attach: LangChain Worker (celery)"
-            ],
-            "preLaunchTask": "Start: Athena debug stack",
-            "stopAll": true
+            "cwd": "${workspaceFolder}/polymetis",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/polymetis",
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONWARNINGS": "ignore::UserWarning"
+            }
         }
     ]
 }
