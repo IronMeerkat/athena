@@ -33,3 +33,4 @@ settings.yaml
 **/prompts.py
 polymetis/celerybeat-schedule
 tests/read_messages.ipynb
+scripts/migrate_prompts.py

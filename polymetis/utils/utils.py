@@ -43,11 +43,7 @@ async def get_client_and_tools():
 
     client = MultiServerMCPClient(
         {
-            "ergane": {
-                "command": "python",
-                "args": ["/app/chalkeion/server.py"],
-                "transport": "stdio",
-            },
+            "ergane": settings.ERGANE_CONFIGURATIONS.model_dump(),
 
             # "notion": {
             #     "url": "https://mcp.notion.com/mcp",
@@ -58,8 +54,7 @@ async def get_client_and_tools():
     )
     checkpointer : AsyncRedisSaver = AsyncRedisSaver(redis_url=f'redis://{settings.REDIS_URL}')
     await checkpointer.asetup()
-    # tools = await client.get_tools()
-    tools = []
+    tools = await client.get_tools()
     return client, tools, checkpointer
 
 vec_options = quote('-c search_path=rag,public', safe='')

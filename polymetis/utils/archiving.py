@@ -36,13 +36,14 @@ async def archive_thread(state: BaseState, namespace: str= 'global'):
             "role": msg.type,
             "session_id": state.session_id,
             "ts": timestamp_ms,
-            "text": msg.content,
         }
         await store.aput(
             namespace=namespace,
             key=f"{namespace}:{state.session_id}:{timestamp_ms}:{idx}",
-            value=metadata
+            value={**metadata, "text": msg.content}
         )
+        texts.append(msg.content)
         metadatas.append(metadata)
     vectorstore.add_texts(texts, metadatas=metadatas)
+    logger.info(f"Archived {len(texts)} messages for session {state.session_id}")
 

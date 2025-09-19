@@ -27,7 +27,7 @@
             }
         },
         {
-            "name": "Python: Polymetis Celery",
+            "name": "Python: Polymetis Celery (with auto-restart)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/.venv/bin/watchmedo",
@@ -35,6 +35,7 @@
                 "auto-restart",
                 "--directory=${workspaceFolder}/polymetis",
                 "--directory=${workspaceFolder}/athena-utils",
+                "--directory=${workspaceFolder}/ergane",
                 "--patterns=*.py;*.yaml",
                 "--recursive",
                 "--",
@@ -55,6 +56,74 @@
                 "PYTHONUNBUFFERED": "1",
                 "PYTHONWARNINGS": "ignore::UserWarning"
             }
+        },
+        {
+            "name": "Python: Polymetis Celery (debug mode)",
+            "type": "python",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A", "run:celery_app",
+                "worker",
+                "--loglevel=debug",
+                "--concurrency=1",
+                "--pool=solo",
+                "--logfile=-"
+            ],
+            "cwd": "${workspaceFolder}/polymetis",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/polymetis",
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONWARNINGS": "ignore::UserWarning"
+            }
+        },
+        {
+            "name": "Python: Polymetis Celery (auto-restart + debug)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/watchmedo",
+            "args": [
+                "auto-restart",
+                "--directory=${workspaceFolder}/polymetis",
+                "--directory=${workspaceFolder}/athena-utils",
+                "--directory=${workspaceFolder}/ergane",
+                "--patterns=*.py;*.yaml",
+                "--recursive",
+                "--",
+                "celery",
+                "-A", "run:celery_app",
+                "worker",
+                "--loglevel=debug",
+                "--concurrency=1",
+                "--pool=solo",
+                "--logfile=-"
+            ],
+            "cwd": "${workspaceFolder}/polymetis",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/polymetis",
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONWARNINGS": "ignore::UserWarning"
+            }
+        },
+        {
+            "name": "Python: Attach to Celery Remote Debug",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "${workspaceFolder}"
+                }
+            ],
+            "justMyCode": false
         }
     ]
 }

@@ -17,7 +17,7 @@ from langgraph.graph import END, StateGraph, START
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType, archive_thread
+from utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType, archive_thread, agentless_start
 from utility_agents import determine_tone, determine_topics
 from utility_agents.topic import TopicLiteral
 from agents.prompts import *
@@ -42,23 +42,10 @@ class TelegramState(BaseState):
     needs_restart: bool = False
 
 
-async def route(state: TelegramState) -> TelegramState:
-
-    state.topics = []
-
-    if len(state.messages) < len(DEFAULT_START_MESSAGES):
-        state.messages = DEFAULT_START_MESSAGES
-
-
-    if state.needs_restart:
-        await checkpointer.adelete_thread(str(state.session_id))
-        state.messages = DEFAULT_START_MESSAGES
-        state.needs_restart = False
-
-
-    return state
 
 async def primer(state: TelegramState) -> TelegramState:
+
+    logger.info(f"messages at start: {len(state.messages)}")
 
     state.messages.append(HumanMessage(content=state.text))
     tone = await determine_tone(state)
@@ -76,6 +63,7 @@ async def primer(state: TelegramState) -> TelegramState:
 
 async def node_converse(state: TelegramState) -> TelegramState:
 
+    logger.info(f"messages at converse: {len(state.messages)}")
 
     dynamic_model = base_model.bind(
         temperature=state.temperature,
@@ -88,22 +76,16 @@ async def node_converse(state: TelegramState) -> TelegramState:
 
     state.messages = out["messages"]
 
+    logger.info(f"messages at end: {len(state.messages)}")
+
     return state
-
-async def node_restart(state: TelegramState) -> TelegramState:
-
-    await archive_thread(state, namespace="telegram")
-    state.needs_restart = True
-    state.messages = DEFAULT_START_MESSAGES
-    return state
-
 
 
 graph = StateGraph(TelegramState)
-graph.add_node("route", route)
+graph.add_node("route", lambda state: state, defer=True)
 graph.add_node("primer", primer, defer=True)
 graph.add_node("converse", node_converse)
-graph.add_node("restart", node_restart)
+graph.add_node("restart", lambda state: state, defer=True)
 
 graph.set_entry_point("route")
 graph.add_conditional_edges(
@@ -138,10 +120,13 @@ async def telegram_agent_task(**kwargs):
     try:
 
         if kwargs['text'] == '/start':
-            result = await telegram_agent.ainvoke(kwargs, config=config)
-            await checkpointer.adelete_thread(str(kwargs['session_id']))
-            result = await telegram_agent.ainvoke(kwargs, config=config) # neccessary cuz of a langchain bug
-            send_telegram_message(result['session_id'], result['messages'][-1].content)
+            if await agentless_start(kwargs['session_id'], namespace="telegram"):
+                # Reinitialize agent state
+                init_state = TelegramState(messages=DEFAULT_START_MESSAGES, text=kwargs['text'], session_id=kwargs['session_id'])
+                await telegram_agent.ainvoke(init_state, config=config)
+                send_telegram_message(kwargs['session_id'], AI_PROMPT_1.content)
+            else:
+                send_telegram_message(kwargs['session_id'], "Sorry, I hit an error. Please try again.")
         else:
             result = await telegram_agent.ainvoke(kwargs, config=config)
             send_telegram_message(result['session_id'], result['messages'][-1].content)
