@@ -32,3 +32,4 @@ athena-utils/src/settings.yaml
 settings.yaml
 **/prompts.py
 polymetis/celerybeat-schedule
+tests/read_messages.ipynb

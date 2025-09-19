@@ -11,13 +11,13 @@ logger = get_logger(__name__)
 lite_model = ChatOpenAI(model="gpt-5-mini", temperature=0.4, reasoning_effort="low", verbosity="low")
 
 class ToneResponse(BaseModel):
-    temperature: float = Field(default=0.4, ge=0.6, le=1.4)
+    temperature: float = Field(default=1, ge=0.6, le=1.4)
     reasoning_effort: str = Field(default="medium", choices=["minimal", "low", "medium", "high"])
     verbosity: str = Field(default="medium", choices=["low", "medium", "high"])
 
 class ToneSettings(BaseUtilityState):
     messages: MsgFieldType = Field(default_factory=lambda: [SYSTEM_PROMPT_1, TONE_PROMPT])
-    temperature: float = Field(default=0.4, ge=0.6, le=1.4)
+    temperature: float = Field(default=1, ge=0.6, le=1.4)
     reasoning_effort: str = Field(default="medium", choices=["minimal", "low", "medium", "high"])
     verbosity: str = Field(default="medium", choices=["low", "medium", "high"])
 

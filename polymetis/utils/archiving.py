@@ -28,7 +28,7 @@ async def archive_thread(state: BaseState, namespace: str= 'global'):
     texts = []
     metadatas = []
     for idx, msg in enumerate(state.interesting_messages):
-        if not await should_archive(msg, namespace) or True: # testing
+        if not await should_archive(msg, namespace):
             continue
         timestamp_ms = int(time.time() * 1000)
         metadata = {
@@ -36,6 +36,7 @@ async def archive_thread(state: BaseState, namespace: str= 'global'):
             "role": msg.type,
             "session_id": state.session_id,
             "ts": timestamp_ms,
+            "text": msg.content,
         }
         await store.aput(
             namespace=namespace,
