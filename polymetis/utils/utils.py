@@ -39,23 +39,26 @@ from utils.build_retriever import build_retriever
 # Module logger
 logger = get_logger(__name__)
 
-async def get_client_and_tools():
+async def get_ergane():
 
-    client = MultiServerMCPClient(
+    ergane = MultiServerMCPClient(
         {
             "ergane": settings.ERGANE_CONFIGURATIONS.model_dump(),
-
-            # "notion": {
-            #     "url": "https://mcp.notion.com/mcp",
-            #     "transport": "streamable_http",
-            #     "headers": get_mcp_headers(),
-            # },
+            "zapier": {
+                "transport": "streamable_http",
+                "url": settings.ZAPIER_URL
+            },
+            "browser": {
+                "transport": "stdio",
+                "command": "npx",
+                "args": ["@agent-infra/mcp-server-browser@latest"]
+            }
         }
     )
     checkpointer : AsyncRedisSaver = AsyncRedisSaver(redis_url=f'redis://{settings.REDIS_URL}')
     await checkpointer.asetup()
-    tools = await client.get_tools()
-    return client, tools, checkpointer
+    tools = await ergane.get_tools()
+    return ergane, tools, checkpointer
 
 vec_options = quote('-c search_path=rag,public', safe='')
 vec_dsn = f"{settings.DATABASE_URL}{'&' if '?' in settings.DATABASE_URL else '?'}options={vec_options}"
@@ -69,7 +72,7 @@ pg_engine = PGEngine.from_connection_string(vec_dsn)
 rag_tool = None
 
 
-client, tools, checkpointer = asyncio.run(get_client_and_tools())
+ergane, tools, checkpointer = asyncio.run(get_ergane())
 
 embeddings = init_embeddings(model="openai:text-embedding-3-small")
 

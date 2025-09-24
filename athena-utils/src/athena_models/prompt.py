@@ -4,7 +4,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
 import enum
-
+from langchain_core.messages import BaseMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from .utils import Base, TimestampMixin
 
 class PromptRole(enum.Enum):
@@ -39,3 +40,23 @@ class Prompt(TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"Prompt(id={self.id!r}, key={self.key!r}, version={self.version!r})"
+
+    @property
+    def as_message(self) -> BaseMessage:
+
+
+        message_kwargs = {
+            "content": self.content,
+            **(self.message_config or {}),
+        }
+
+        if self.role == PromptRole.SYSTEM:
+            return SystemMessage(**message_kwargs)
+        elif self.role == PromptRole.USER:
+            return HumanMessage(**message_kwargs)
+        elif self.role == PromptRole.ASSISTANT:
+            return AIMessage(**message_kwargs)
+        elif self.role == PromptRole.TOOL:
+            return ToolMessage(**message_kwargs)
+        else:
+            raise ValueError(f"Unknown prompt role: {self.role}")

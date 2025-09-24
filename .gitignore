@@ -34,3 +34,4 @@ settings.yaml
 polymetis/celerybeat-schedule
 tests/read_messages.ipynb
 scripts/migrate_prompts.py
+athena-utils/src/athena_settings/messages.yaml
