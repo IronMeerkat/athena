@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
 import sqlalchemy as sa
 from prompts import all_prompt_tools
+from tools import call_finance_agent
+
 
 logger = get_logger(__name__)
 
@@ -16,17 +18,12 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("ergane", debug=True)
 
-def async_tool(func):
+# for tool in all_prompt_tools:
+#     # Register both async and sync tools directly with MCP
+#     mcp.tool()(tool)
 
-    return mcp.tool()(asyncio.run(func))
+mcp.tool()(call_finance_agent)
 
-for tool in all_prompt_tools:
-    if asyncio.iscoroutinefunction(tool):
-        tool = async_tool(tool)
-    else:
-        tool = mcp.tool()(tool)
-
-
-
+logger.info("Running MCP server on stdio")
 asyncio.run(mcp.run_stdio_async())
 

@@ -4,6 +4,7 @@ from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_cohere import CohereRerank
 from langchain_postgres import PGVectorStore
+from .mem0_compatible_pgvectorstore import Mem0CompatiblePGVectorStore
 from athena_logging import get_logger
 from athena_settings import settings
 
@@ -11,7 +12,7 @@ logger = get_logger(__name__)
 
 
 
-def build_retriever(vectorstore: PGVectorStore) -> VectorStoreRetriever | ContextualCompressionRetriever:
+def build_retriever(vectorstore: Mem0CompatiblePGVectorStore) -> VectorStoreRetriever | ContextualCompressionRetriever:
     search_type = settings.RETRIEVAL_SEARCH_TYPE
     k = settings.RETRIEVAL_K
     fetch_k = settings.RETRIEVAL_FETCH_K

@@ -42,6 +42,33 @@ app.conf.worker_max_tasks_per_child = 100  # Restart workers more frequently to 
 app.conf.worker_max_memory_per_child = 200000  # Restart workers if they use too much memory (200MB)
 app.conf.task_soft_time_limit = 300  # 5 minutes soft limit
 app.conf.task_time_limit = 600  # 10 minutes hard limit
+app.conf.task_reject_on_worker_lost = True  # Reject tasks if worker is lost
+app.conf.task_ignore_result = True  # Don't store task results unless explicitly needed
+
+# Connection resilience settings
+app.conf.broker_connection_retry_on_startup = True
+app.conf.broker_connection_retry = True
+app.conf.broker_connection_max_retries = 10
+app.conf.broker_connection_retry_delay = 5.0
+app.conf.broker_heartbeat = 30  # Send heartbeat every 30 seconds
+app.conf.broker_pool_limit = 10
+app.conf.result_backend_transport_options = {
+    'retry_policy': {
+        'timeout': 5.0,
+        'max_retries': 3,
+    }
+}
+app.conf.broker_transport_options = {
+    'retry_policy': {
+        'timeout': 5.0,
+        'max_retries': 3,
+    },
+    'confirm_publish': True,
+    'max_retries': 3,
+    'interval_start': 0,
+    'interval_step': 0.2,
+    'interval_max': 0.2,
+}
 
 
 @celery_setup_logging.connect  # type: ignore[misc]

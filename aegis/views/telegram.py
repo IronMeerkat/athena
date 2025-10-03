@@ -19,8 +19,17 @@ async def telegram_webhook(data: dict = Body(...)):
     if not message:
         raise HTTPException(status_code=400, detail="Message not found")
 
+    # Extract message details
     text = message['text']
     chat_id = message['chat']['id']
-    send_celery_task("telegram_agent_task", session_id=chat_id, text=text)
+    message_id = message['message_id']
+
+    # Create unique task ID to prevent duplicates from webhook retries
+    task_id = f"telegram_{chat_id}_{message_id}"
+
+    send_celery_task("telegram_agent_task",
+                    task_id=task_id,  # Celery will ignore duplicate task IDs
+                    session_id=chat_id,
+                    text=text)
 
     return Response(status_code=status.HTTP_200_OK)

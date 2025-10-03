@@ -31,6 +31,9 @@ class User(Base):
     chats: Mapped[list["Chat"]] = relationship(
         "Chat", back_populates="user", passive_deletes=True
     )
+    docs: Mapped[list["Doc"]] = relationship(
+        "Doc", back_populates="user", passive_deletes=True
+    )
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, username={self.username!r})"

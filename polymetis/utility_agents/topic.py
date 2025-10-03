@@ -1,8 +1,8 @@
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import Field, field_validator
-from polymetis.agents.prompts import TOPIC_PROMPT_DICT, SYSTEM_PROMPT_1, TOPIC_PROMPT
-from utils import BaseUtilityState, MsgFieldType, BaseModel, ergane
+from prompts import DEFAULT_TELEGRAM_MESSAGES
+from utils import BaseUtilityState, MsgFieldType, BaseModel
 from typing import List
 from typing_extensions import Literal
 from langgraph.prebuilt import create_react_agent
@@ -15,7 +15,7 @@ lite_model = ChatOpenAI(model="gpt-5-mini", temperature=0.4, reasoning_effort="l
 TopicLiteral = Literal["philosophy", "political", "foreign_policy", "science"]
 
 class TopicSettings(BaseUtilityState):
-    messages: MsgFieldType = Field(default_factory=lambda: [SYSTEM_PROMPT_1, TOPIC_PROMPT])
+    messages: MsgFieldType = Field(default_factory=lambda: DEFAULT_TELEGRAM_MESSAGES) # PLACEHOLDER FOR TOPIC PROMPT
     topics: List[TopicLiteral] = Field(default_factory=list)
 
 

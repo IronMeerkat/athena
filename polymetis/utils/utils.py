@@ -1,65 +1,46 @@
 import asyncio
+import atexit
+import operator
 import os
 import re
-import atexit
+import requests
 import sys
+from typing import Any, Dict, List
 from urllib.parse import quote
-import operator
 
-from athena_settings import settings
-from typing import Dict, List, Any
-from langchain_core.vectorstores import VectorStoreRetriever
-from pydantic import BaseModel, Field
 from athena_celery import shared_task
 from athena_logging import get_logger
+from athena_settings import settings
 from langchain.embeddings import init_embeddings
-from langchain_core.embeddings import Embeddings
-from langchain_openai import ChatOpenAI
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.redis import AsyncRedisSaver
-from langgraph.store.postgres import PostgresStore
-from langgraph.graph import END, StateGraph
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, ToolMessage, SystemMessage
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_postgres import PGVectorStore, PGEngine, PGVector
-from langchain_postgres.v2.indexes import DistanceStrategy, HNSWIndex
-from langchain.tools.retriever import create_retriever_tool
-from pydantic import BaseModel as PydanticBaseModel, Field, computed_field
-from typing_extensions import Annotated
-
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
-from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain.tools.retriever import create_retriever_tool
 from langchain_cohere import CohereRerank
-import requests
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain_core.embeddings import Embeddings
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_openai import ChatOpenAI
+from langchain_postgres import PGEngine, PGVector, PGVectorStore
+from .mem0_compatible_pgvectorstore import Mem0CompatiblePGVectorStore
+from langchain_postgres.v2.indexes import DistanceStrategy, HNSWIndex
+from langgraph.checkpoint.redis import AsyncRedisSaver
+from langgraph.graph import END, StateGraph
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import create_react_agent
+from langgraph.store.postgres import PostgresStore
+from pydantic import BaseModel, Field
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import computed_field
+from typing_extensions import Annotated
 
 from utils.build_retriever import build_retriever
 
 # Module logger
 logger = get_logger(__name__)
 
-async def get_ergane():
-
-    ergane = MultiServerMCPClient(
-        {
-            "ergane": settings.ERGANE_CONFIGURATIONS.model_dump(),
-            "zapier": {
-                "transport": "streamable_http",
-                "url": settings.ZAPIER_URL
-            },
-            "browser": {
-                "transport": "stdio",
-                "command": "npx",
-                "args": ["@agent-infra/mcp-server-browser@latest"]
-            }
-        }
-    )
-    checkpointer : AsyncRedisSaver = AsyncRedisSaver(redis_url=f'redis://{settings.REDIS_URL}')
-    await checkpointer.asetup()
-    tools = await ergane.get_tools()
-    return ergane, tools, checkpointer
-
+# Database connection setup
 vec_options = quote('-c search_path=rag,public', safe='')
 vec_dsn = f"{settings.DATABASE_URL}{'&' if '?' in settings.DATABASE_URL else '?'}options={vec_options}"
 _db_url_no_driver = re.sub(r'^postgresql\+[^:]+', 'postgresql', settings.DATABASE_URL)
@@ -68,15 +49,10 @@ store_dsn = f"{_db_url_no_driver}{'&' if '?' in _db_url_no_driver else '?'}optio
 
 pg_engine = PGEngine.from_connection_string(vec_dsn)
 
-# Default rag tool placeholder for loader
-rag_tool = None
-
-
-ergane, tools, checkpointer = asyncio.run(get_ergane())
-
+# Initialize embeddings and vectorstore
 embeddings = init_embeddings(model="openai:text-embedding-3-small")
 
-vectorstore : PGVectorStore = PGVectorStore.create_sync(
+vectorstore: Mem0CompatiblePGVectorStore = Mem0CompatiblePGVectorStore.create_sync(
     engine=pg_engine,
     embedding_service=embeddings,
     table_name="docs",
@@ -84,24 +60,26 @@ vectorstore : PGVectorStore = PGVectorStore.create_sync(
     distance_strategy=DistanceStrategy.EUCLIDEAN,  # L2
 )
 
-index : HNSWIndex = HNSWIndex(distance_strategy=DistanceStrategy.EUCLIDEAN, m=16, ef_construction=64)
+index: HNSWIndex = HNSWIndex(distance_strategy=DistanceStrategy.EUCLIDEAN, m=16, ef_construction=64)
 
-
+# Initialize PostgresStore
 _store_cm = PostgresStore.from_conn_string(
-store_dsn,
-index={"dims": 1536, "embed": embeddings, "fields": ["text"]},
+    store_dsn,
+    index={"dims": 1536, "embed": embeddings, "fields": ["text"]},
 )
-store : PostgresStore = _store_cm.__enter__()
+store: PostgresStore = _store_cm.__enter__()
 atexit.register(lambda: _store_cm.__exit__(None, None, None))
 
+# Initialize checkpointer
+async def _setup_checkpointer():
+    """Initialize the Redis checkpointer."""
+    checkpointer = AsyncRedisSaver(redis_url=f'redis://{settings.REDIS_URL}')
+    await checkpointer.asetup()
+    return checkpointer
 
-retriever : VectorStoreRetriever | ContextualCompressionRetriever = build_retriever(vectorstore)
-rag_tool = create_retriever_tool(
-    retriever,
-    name="search_docs",
-    description="Retrieve and rerank relevant context from the RAG vector store.",
-)
-tools.append(rag_tool)
+checkpointer = asyncio.run(_setup_checkpointer())
+
+
 
 MsgFieldType = Annotated[List[BaseMessage], add_messages]
 

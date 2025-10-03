@@ -10,6 +10,12 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - athena
 
@@ -40,6 +46,29 @@ services:
       test: ["CMD-SHELL", "pg_isready -U athena -d athena"]
       interval: 10s
       timeout: 5s
+      retries: 5
+    networks:
+      - athena
+
+  neo4j:
+    image: neo4j:5.18-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/Athena9000}
+      NEO4J_PLUGINS: '["apoc", "apoc-extended"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "Athena9000", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
       retries: 5
     networks:
       - athena
@@ -90,6 +119,10 @@ volumes:
   postgres_data:
   mongo_data:
   hf_cache:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
 
 networks:
   athena:

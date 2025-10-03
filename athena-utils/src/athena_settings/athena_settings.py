@@ -1,6 +1,7 @@
 from pydantic import create_model
 from typing import Any, Dict, Optional, Tuple
 import yaml
+import json
 import importlib.resources
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage, ToolMessage
@@ -46,15 +47,8 @@ def recursive_pydantic_settings_model(data: Dict[str, Any]) -> Settings:
     DynamicModel = create_model("DynamicModel", **fields)
     return DynamicModel()
 
-with open(settings_dir / 'messages.yaml', 'r') as f:
-    messages_dict = yaml.full_load(f)
 
 with open(settings_dir / 'settings.yaml', 'r') as f:
     settings_dict = yaml.full_load(f)
-
-messages_dict = {k: tuple_to_message(v) for k, v in messages_dict.items()}
-
-settings_dict["messages"] = messages_dict
-
 
 settings = recursive_pydantic_settings_model(settings_dict)

@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI
 from pydantic import Field
-from polymetis.agents.prompts import SYSTEM_PROMPT_1, TONE_PROMPT
+from prompts import DEFAULT_TELEGRAM_MESSAGES
 from utils import BaseUtilityState, MsgFieldType, BaseModel
 from langgraph.prebuilt import create_react_agent
 from athena_logging import get_logger
@@ -16,7 +16,7 @@ class ToneResponse(BaseModel):
     verbosity: str = Field(default="medium", choices=["low", "medium", "high"])
 
 class ToneSettings(BaseUtilityState):
-    messages: MsgFieldType = Field(default_factory=lambda: [SYSTEM_PROMPT_1, TONE_PROMPT])
+    messages: MsgFieldType = Field(default_factory=lambda: DEFAULT_TELEGRAM_MESSAGES) # PLACEHOLDER FOR TONE PROMPT
     temperature: float = Field(default=1, ge=0.6, le=1.4)
     reasoning_effort: str = Field(default="medium", choices=["minimal", "low", "medium", "high"])
     verbosity: str = Field(default="medium", choices=["low", "medium", "high"])

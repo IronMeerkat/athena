@@ -16,9 +16,9 @@ from langgraph.graph import END, StateGraph, START
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
-from polymetis.agents.prompts import SYSTEM_PROMPT_1, STARTER_PROMPT, TEST_STARTER_PROMPT
-from utils import store, checkpointer, vectorstore, tools, BaseState, MsgFieldType
-
+from prompts import SUPER_SYSTEM_PROMPT
+from utils import store, checkpointer, vectorstore, BaseState, MsgFieldType
+from tools import tools
 from integrations.telegram import send_telegram_message
 from athena_logging import get_logger
 
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 class TelegramState(BaseState):
     remaining_steps: int = 5
-    messages: MsgFieldType = Field(default_factory=lambda: [SYSTEM_PROMPT_1, TEST_STARTER_PROMPT])
+    messages: MsgFieldType = Field(default_factory=lambda: SUPER_SYSTEM_PROMPT) # PLACEHOLDER FOR STARTER PROMPT
     telegram_chat_id: int = settings.TELEGRAM_CHAT_ID
     temperature: float = 0.9
     reasoning_effort: str = "low"
@@ -51,7 +51,7 @@ graph.add_edge(START, "converse")
 graph.add_edge("converse", END)
 
 self_starter_agent = graph.compile(checkpointer=checkpointer).with_config(
-    {"configurable": {"checkpoint_ns": "telegram"}}
+    {"configurable": {"checkpoint_ns": "self_starter"}}
 )
 
 @shared_task(name="self_starter_agent_task")
@@ -59,7 +59,7 @@ async def self_starter_agent_task(**kwargs):
     config = RunnableConfig(
         max_concurrency=6,
         configurable={
-            "checkpoint_ns": "telegram",
+            "checkpoint_ns": "self_starter",
             "telegram_chat_id": settings.TELEGRAM_CHAT_ID
         }
     )

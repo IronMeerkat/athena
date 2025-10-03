@@ -15,6 +15,7 @@ def send_telegram_message(chat_id: int, text: str) -> None:
 
 
 
+
 def send_chat_action(chat_id: int, action: str = "typing") -> None:
     token = settings.TELEGRAM_BOT_TOKEN
     url = f"https://api.telegram.org/bot{token}/sendChatAction"
